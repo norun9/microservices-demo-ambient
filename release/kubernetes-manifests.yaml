@@ -28,6 +28,8 @@ spec:
     metadata:
       labels:
         app: emailservice
+        version: v1
+        istio.io/dataplane-mode: ambient
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
@@ -84,6 +86,8 @@ spec:
     metadata:
       labels:
         app: checkoutservice
+        version: v1
+        istio.io/dataplane-mode: ambient
     spec:
       serviceAccountName: default
       containers:
@@ -153,6 +157,8 @@ spec:
     metadata:
       labels:
         app: recommendationservice
+        version: v1
+        istio.io/dataplane-mode: ambient
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
@@ -213,8 +219,8 @@ spec:
     metadata:
       labels:
         app: frontend
-      annotations:
-        sidecar.istio.io/rewriteAppHTTPProbers: "true"
+        version: v1
+        istio.io/dataplane-mode: ambient
     spec:
       serviceAccountName: default
       containers:
@@ -313,6 +319,8 @@ spec:
     metadata:
       labels:
         app: paymentservice
+        version: v1
+        istio.io/dataplane-mode: ambient
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
@@ -369,6 +377,8 @@ spec:
     metadata:
       labels:
         app: productcatalogservice
+        version: v1
+        istio.io/dataplane-mode: ambient
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
@@ -427,6 +437,8 @@ spec:
     metadata:
       labels:
         app: cartservice
+        version: v1
+        istio.io/dataplane-mode: ambient
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
@@ -444,7 +456,7 @@ spec:
             memory: 64Mi
           limits:
             cpu: 300m
-            memory: 128Mi
+            memory: 256Mi
         readinessProbe:
           initialDelaySeconds: 15
           exec:
@@ -481,8 +493,8 @@ spec:
     metadata:
       labels:
         app: loadgenerator
-      annotations:
-        sidecar.istio.io/rewriteAppHTTPProbers: "true"
+        version: v1
+        istio.io/dataplane-mode: ambient
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
@@ -531,6 +543,8 @@ spec:
     metadata:
       labels:
         app: currencyservice
+        version: v1
+        istio.io/dataplane-mode: ambient
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
@@ -588,6 +602,8 @@ spec:
     metadata:
       labels:
         app: shippingservice
+        version: v1
+        istio.io/dataplane-mode: ambient
     spec:
       serviceAccountName: default
       containers:
@@ -646,6 +662,8 @@ spec:
     metadata:
       labels:
         app: redis-cart
+        version: v1
+        istio.io/dataplane-mode: ambient
     spec:
       containers:
       - name: redis
@@ -699,6 +717,8 @@ spec:
     metadata:
       labels:
         app: adservice
+        version: v1
+        istio.io/dataplane-mode: ambient
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
