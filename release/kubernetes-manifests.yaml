@@ -456,7 +456,7 @@ spec:
             memory: 64Mi
           limits:
             cpu: 300m
-            memory: 128Mi
+            memory: 200Mi
         readinessProbe:
           initialDelaySeconds: 15
           exec:
