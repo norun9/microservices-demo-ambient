@@ -5,6 +5,8 @@ spec:
   meshConfig:
     # accessLogFile=/dev/stdout
     enableTracing: true
+    defaultConfig:
+      tracing: {} # disable legacy MeshConfig tracing options
     extensionProviders:
     - name: otel-tracing
       opentelemetry:

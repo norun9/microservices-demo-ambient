@@ -517,7 +517,7 @@ spec:
           value: "frontend:80"
       containers:
       - name: main
-        image: gcr.io/google-samples/microservices-demo/loadgenerator:v0.3.6
+        image: k6-grpc:local
         env:
         - name: FRONTEND_ADDR
           value: "frontend:80"
@@ -771,4 +771,6 @@ spec:
   - name: grpc
     port: 9555
     targetPort: 9555
+---
+
 ---

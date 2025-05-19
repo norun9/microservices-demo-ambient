@@ -66,6 +66,10 @@ spec:
       port: 4318
       protocol: TCP
       targetPort: 4318
+    - name: prometheus
+      port: 8889
+      protocol: TCP
+      targetPort: 8889
   selector:
     app: opentelemetry-collector
 ---
@@ -89,10 +93,7 @@ spec:
         sidecar.istio.io/inject: "false" # do not inject
     spec:
       containers:
-        - command:
-            - "/otelcol"
-            - "--config=/conf/opentelemetry-collector-config.yaml"
-          image: otel/opentelemetry-collector:0.123.0
+        - image: otel/opentelemetry-collector-contrib:0.126.0 # https://hub.docker.com/r/otel/opentelemetry-collector
           imagePullPolicy: IfNotPresent
           name: opentelemetry-collector
           ports:
@@ -111,7 +112,7 @@ spec:
           terminationMessagePolicy: File
           volumeMounts:
             - name: opentelemetry-collector-config-vol
-              mountPath: /conf
+              mountPath: /etc/otelcol-contrib/
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
@@ -121,5 +122,5 @@ spec:
             name: opentelemetry-collector-conf
             items:
               - key: opentelemetry-collector-config
-                path: opentelemetry-collector-config.yaml
+                path: config.yaml
           name: opentelemetry-collector-config-vol

@@ -36,9 +36,24 @@ otelCollector="http://$otelCollectorName:4317"
 
 check_network
 
+# Build otelcollector image separately
+log "Building: $otelCollectorName:$TAG"
+(
+    cd "${SCRIPTDIR}/../src/otelcollector"
+    docker build -t "${otelCollectorName}:$TAG" .
+)
+
+# Build the rest of the microservices
 while IFS= read -d $'\0' -r dir; do
     # build image
     svcname="$(basename "${dir}")"
+    
+    # Skip otelcollector as we've already built it
+    # Skip adservice-go as it doesn't have a Dockerfile
+    if [ "$svcname" == "otelcollector" ] || [ "$svcname" == "adservice-go" ]; then
+        continue
+    fi
+    
     builddir="${dir}"
     #PR 516 moved cartservice build artifacts one level down to src
     if [ "$svcname" == "cartservice" ] 
