@@ -1,0 +1,157 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-conf
+  namespace: observability
+  labels:
+    app: otel-collector
+data:
+  otel-collector-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+    processors:
+      batch: {}
+    exporters:
+      file: # ファイルとして収集するための設定
+        path: /data/telemetry.jsonl
+      jaeger:
+        endpoint: jaeger-collector.istio-system.svc.cluster.local:14250
+        tls:
+          insecure: true
+        sending_queue:
+          enabled: true
+        retry_on_failure:
+          enabled: true
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+      logging:
+        loglevel: debug
+    extensions:
+      health_check: {}
+    service:
+      extensions: [health_check]
+      telemetry:
+        logs:
+          level: INFO
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [file, jaeger]
+        metrics:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [file, prometheus]
+        logs:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [file, logging]
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: observability
+  labels:
+    app: otel-collector
+spec:
+  selector:
+    app: otel-collector
+  ports:
+    - name: grpc-opencensus
+      port: 55678
+      protocol: TCP
+      targetPort: 55678
+    - name: grpc-otlp
+      port: 4317
+      protocol: TCP
+      targetPort: 4317
+    - name: http-otlp
+      port: 4318
+      protocol: TCP
+      targetPort: 4318
+    - name: prometheus
+      port: 8889
+      protocol: TCP
+      targetPort: 8889
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: observability
+  labels:
+    app: otel-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+        sidecar.istio.io/inject: "false"
+    spec:
+      containers:
+        - name: debug-shell
+          image: busybox:1.35.0
+          command: [ "sleep", "1d" ]
+          volumeMounts:
+          - name: data
+            mountPath: /data
+        - name: otel-collector
+          image: otel/opentelemetry-collector:0.54.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - "/otelcol"
+            - "--config=/conf/otel-collector-config.yaml"
+          ports:
+            - name: grpc-opencensus
+              containerPort: 55678
+            - name: grpc-otlp
+              containerPort: 4317
+            - name: http-otlp
+              containerPort: 4318
+          resources:
+            requests:
+              cpu: 200m
+              memory: 400Mi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          volumeMounts:
+            - name: otel-collector-config
+              mountPath: /conf/otel-collector-config.yaml
+              subPath: otel-collector-config.yaml
+            - name: data
+              mountPath: /data
+      restartPolicy: Always
+      dnsPolicy: ClusterFirst
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: otel-collector-config
+          configMap:
+            name: otel-collector-conf
+            items:
+              - key: otel-collector-config.yaml
+                path: otel-collector-config.yaml
