@@ -1,24 +1,17 @@
-# https://istio.io/latest/docs/tasks/observability/distributed-tracing/opentelemetry/#installation
 apiVersion: install.istio.io/v1alpha1
 kind: IstioOperator
+metadata:
+  namespace: istio-system
 spec:
   meshConfig:
-    # accessLogFile=/dev/stdout
+    accessLogFile: /dev/stdout
     enableTracing: true
     defaultConfig:
-      tracing: {} # disable legacy MeshConfig tracing options
+      tracing: {}
     extensionProviders:
-    - name: otel-tracing
-      opentelemetry:
-        # Traces will be exported via OTLP/gRPC to the OpenTelemetry Collector.
-        port: 4317
-        # kubectl get svc -n observability
-        # NAME                                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)             AGE
-        # opentelemetry-collector              ClusterIP   10.96.135.190   <none>        4317/TCP,4318/TCP   41h
-        service: opentelemetry-collector.observability.svc.cluster.local
-        resource_detectors:
-          environment: {}
-#   基本的にはistioctl install --set profile=ambient --set meshConfig.accessLogFile=/dev/stdoutでenvoyのL7ログを標準出力できるが、より詳細な設定をしたい場合accessLogging:を利用する
-#    accessLogging:
-#      - providers:
-#          - name: envoy
+      - name: otel-tracing
+        opentelemetry:
+          port: 4317
+          service: opentelemetry-collector.observability.svc.cluster.local
+          resource_detectors:
+            environment: {}

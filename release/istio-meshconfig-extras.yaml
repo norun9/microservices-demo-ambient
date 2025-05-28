@@ -1,0 +1,22 @@
+meshConfig:
+  accessLogFile: /dev/stdout
+  accessLogEncoding: JSON
+  enableTracing: true
+
+  # ────────────────────────────────────────────────────
+  # turn on the new (v2) tracing configuration schema
+  defaultConfig:
+    tracing: {}
+    proxyMetadata:
+      # this is for supporting for "missing selected ALPN property" error
+      GRPC_ENFORCE_ALPN_ENABLED: "false"
+
+  # ────────────────────────────────────────────────────
+  # wire up your OTLP‐based extensionProvider for Istio’s mesh
+  extensionProviders:
+    - name: otel-tracing
+      opentelemetry:
+        port: 4317
+        service: opentelemetry-collector.observability.svc.cluster.local:4317
+        resource_detectors:
+          environment: {}
