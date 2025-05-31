@@ -3,8 +3,10 @@ kind: IstioOperator
 metadata:
   namespace: istio-system
 spec:
+  profile: ambient
   meshConfig:
     accessLogFile: /dev/stdout
+    accessLogEncoding: JSON
     enableTracing: true
     defaultConfig:
       tracing: {}
@@ -12,6 +14,6 @@ spec:
       - name: otel-tracing
         opentelemetry:
           port: 4317
-          service: opentelemetry-collector.observability.svc.cluster.local
+          service: opentelemetry-collector.istio-system.svc.cluster.local
           resource_detectors:
             environment: {}

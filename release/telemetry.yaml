@@ -1,10 +1,46 @@
 apiVersion: telemetry.istio.io/v1
 kind: Telemetry
 metadata:
-  name: otel-demo
+  name: mesh-logging-default
   namespace: demo-app
 spec:
-  tracing:
-    - providers:
-        - name: otel-tracing
-      randomSamplingPercentage: 100
+  # https://istio.io/latest/docs/reference/config/telemetry/#Telemetry
+  # in case of using waypoint, you should apply `targetRef` to detect the telemetry destination
+  targetRefs:
+  - kind: Service
+    name: waypoint
+    group: ""
+  accessLogging:
+  - providers:
+    - name: otel-als
+
+
+# metadata:
+#   name: otel-demo
+#   namespace: istio-system
+# spec:
+#   # —————————————————————
+#   # TRACING → extensionProvider “otel-tracing”
+#   # —————————————————————
+#   tracing:
+#   - providers:
+#     - name: otel-tracing
+#     randomSamplingPercentage: 100
+#     customTags:
+#       "my-attribute":
+#         literal:
+#           value: "default-value"
+
+#   # —————————————————————
+#   # METRICS → send metrics via same extensionProvider
+#   # —————————————————————
+#   metrics:
+#   - providers:
+#     - name: otel-tracing
+
+#   # —————————————————————
+#   # ACCESS LOGS → envoy access logs → OTLP
+#   # —————————————————————
+#   accessLogging:
+#   - providers:
+    # - name: otel-tracing
