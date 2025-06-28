@@ -429,6 +429,7 @@ func (fe *frontendServer) setCurrencyHandler(w http.ResponseWriter, r *http.Requ
 func (fe *frontendServer) chooseAd(ctx context.Context, ctxKeys []string, log logrus.FieldLogger) *pb.Ad {
 	ads, err := fe.getAd(ctx, ctxKeys)
 	if err != nil {
+		// ここでエラーが出る
 		log.WithField("error", err).Warn("failed to retrieve ads")
 		return nil
 	}

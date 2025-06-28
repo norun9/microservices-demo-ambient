@@ -444,12 +444,12 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/google-samples/microservices-demo/cartservice:v0.3.6
+        image: cartservice-go:local
         ports:
         - containerPort: 7070
         env:
         - name: REDIS_ADDR
-          value: "redis-cart:6379"
+          value: "redis-cart.demo-app.svc.cluster.local:6379"
         resources:
           requests:
             cpu: 200m
@@ -458,12 +458,15 @@ spec:
             cpu: 300m
             memory: 200Mi
         readinessProbe:
-          initialDelaySeconds: 15
+          initialDelaySeconds: 20
+          periodSeconds: 15
+          timeoutSeconds: 6
           exec:
             command: ["/bin/grpc_health_probe", "-addr=:7070", "-rpc-timeout=5s"]
         livenessProbe:
-          initialDelaySeconds: 15
-          periodSeconds: 10
+          initialDelaySeconds: 20
+          periodSeconds: 15
+          timeoutSeconds: 6
           exec:
             command: ["/bin/grpc_health_probe", "-addr=:7070", "-rpc-timeout=5s"]
 ---
@@ -499,25 +502,25 @@ spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
       restartPolicy: Always
-      initContainers:
-      - command:
-        - /bin/sh
-        - -exc
-        - |
-          echo "Init container pinging frontend: ${FRONTEND_ADDR}..."
-          STATUSCODE=$(wget --server-response http://${FRONTEND_ADDR} 2>&1 | awk '/^  HTTP/{print $2}')
-          if test $STATUSCODE -ne 200; then
-              echo "Error: Could not reach frontend - Status code: ${STATUSCODE}"
-              exit 1
-          fi
-        name: frontend-check
-        image: busybox:latest
-        env:
-        - name: FRONTEND_ADDR
-          value: "frontend:80"
+      # initContainers:
+      # - command:
+      #   - /bin/sh
+      #   - -exc
+      #   - |
+      #     echo "Init container pinging frontend: ${FRONTEND_ADDR}..."
+      #     STATUSCODE=$(wget --server-response http://${FRONTEND_ADDR} 2>&1 | awk '/^  HTTP/{print $2}')
+      #     if test $STATUSCODE -ne 200; then
+      #         echo "Error: Could not reach frontend - Status code: ${STATUSCODE}"
+      #         exit 1
+      #     fi
+      #   name: frontend-check
+      #   image: busybox:latest
+      #   env:
+      #   - name: FRONTEND_ADDR
+      #     value: "frontend:80"
       containers:
       - name: main
-        image: k6-grpc:local
+        image: k6-loadgenerator:local
         env:
         - name: FRONTEND_ADDR
           value: "frontend:80"
@@ -654,6 +657,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis-cart
+  namespace: demo-app
 spec:
   selector:
     matchLabels:
@@ -668,6 +672,7 @@ spec:
       containers:
       - name: redis
         image: redis:alpine
+        command: ["redis-server", "--appendonly", "yes", "--protected-mode", "no"]
         ports:
         - containerPort: 6379
         readinessProbe:
@@ -729,7 +734,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
         - name: server
-          image: gcr.io/google-samples/microservices-demo/adservice:v0.3.6
+          image: adservice-go:local
           ports:
             - containerPort: 9555
           env:
@@ -739,6 +744,12 @@ spec:
               value: "0"
             - name: DISABLE_TRACING
               value: "0"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "otel-collector.observability.svc.cluster.local:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "adservice"
+            - name: OTEL_SERVICE_VERSION
+              value: "v1.0.0"
           # - name: JAEGER_SERVICE_ADDR
           #   value: "jaeger-collector:14268"
           resources:
@@ -751,11 +762,13 @@ spec:
           readinessProbe:
             initialDelaySeconds: 20
             periodSeconds: 15
+            timeoutSeconds: 6
             exec:
               command: ["/bin/grpc_health_probe", "-addr=:9555"]
           livenessProbe:
             initialDelaySeconds: 20
             periodSeconds: 15
+            timeoutSeconds: 6
             exec:
               command: ["/bin/grpc_health_probe", "-addr=:9555"]
 ---

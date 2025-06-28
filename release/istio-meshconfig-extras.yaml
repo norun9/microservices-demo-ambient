@@ -2,21 +2,43 @@ meshConfig:
   accessLogFile: /dev/stdout
   accessLogEncoding: JSON
   enableTracing: true
-
   # ────────────────────────────────────────────────────
   # turn on the new (v2) tracing configuration schema
   defaultConfig:
-    tracing: {}
     proxyMetadata:
       # this is for supporting for "missing selected ALPN property" error
       GRPC_ENFORCE_ALPN_ENABLED: "false"
+  defaultProviders:
+    accessLogging:
+      - otel-als
+    # ───────────────────────────────────────────────────
+    # 1) メトリクスは全サイドカーから "otel" extensionProvider で送る
+    metrics:
+      - otel
+
+    # 2) トレースも全サイドカーから "otel" extensionProvider で送る
+    tracing:
+      - otel
 
   # ────────────────────────────────────────────────────
   # wire up your OTLP‐based extensionProvider for Istio’s mesh
+  # Doc: https://istio.io/latest/docs/reference/config/istio.mesh.v1alpha1/#MeshConfig-ExtensionProvider
   extensionProviders:
-    - name: otel-tracing
-      opentelemetry:
+    # 1) ALS (Access Log Service) 用
+    - name: otel-als
+      envoyOtelAls:
+        service: otel-collector.observability.svc.cluster.local
         port: 4317
-        service: opentelemetry-collector.observability.svc.cluster.local:4317
+        logFormat:
+          labels:
+            pod: "%ENVIRONMENT(POD_NAME)%"
+            namespace: "%ENVIRONMENT(POD_NAMESPACE)%"
+            cluster: "%ENVIRONMENT(ISTIO_META_CLUSTER_ID)%"
+            mesh: "%ENVIRONMENT(ISTIO_META_MESH_ID)%"
+     # OTLP（トレース＆メトリクス）送信用の extensionProvider
+    - name: otel
+      opentelemetry:
+        service: otel-collector.observability.svc.cluster.local
+        port: 4317
         resource_detectors:
           environment: {}

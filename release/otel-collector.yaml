@@ -1,3 +1,4 @@
+# Otel Settings Ref: https://github.com/istio/istio/tree/master/samples/open-telemetry
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -20,43 +21,47 @@ data:
           http:
             endpoint: 0.0.0.0:4318
     processors:
-      batch: {}
+      batch:
+        timeout: 1s
+        send_batch_size: 1
     exporters:
-      file: # ファイルとして収集するための設定
-        path: /data/telemetry.jsonl
-      jaeger:
-        endpoint: jaeger-collector.istio-system.svc.cluster.local:14250
-        tls:
-          insecure: true
-        sending_queue:
-          enabled: true
-        retry_on_failure:
-          enabled: true
-      prometheus:
-        endpoint: "0.0.0.0:8889"
       logging:
         loglevel: debug
+      # 2) トレース専用の file exporter
+      file/traces: # OK
+        path: /data/traces.jsonl
+
+      # (3) メトリクス専用ファイルエクスポーター
+      file/metrics: # メトリクスだけ何も出力されていない。
+        path: /data/metrics.jsonl
+
+      # (4) ログ専用ファイルエクスポーター
+      file/logs: # OK
+        path: /data/logs.jsonl
+
+      prometheus:
+        endpoint: "0.0.0.0:8889"
     extensions:
-      health_check: {}
+      health_check:
     service:
-      extensions: [health_check]
+      extensions:
+        - health_check
       telemetry:
         logs:
-          level: INFO
+          level: "DEBUG"
       pipelines:
         traces:
           receivers: [otlp]
           processors: [batch]
-          exporters: [file, jaeger]
+          exporters: [file/traces]
         metrics:
           receivers: [otlp]
           processors: [batch]
-          exporters: [file, prometheus]
+          exporters: [file/metrics]
         logs:
           receivers: [otlp]
           processors: [batch]
-          exporters: [file, logging]
-
+          exporters: [file/logs,logging]
 ---
 apiVersion: v1
 kind: Service
@@ -69,10 +74,6 @@ spec:
   selector:
     app: otel-collector
   ports:
-    - name: grpc-opencensus
-      port: 55678
-      protocol: TCP
-      targetPort: 55678
     - name: grpc-otlp
       port: 4317
       protocol: TCP
@@ -81,10 +82,10 @@ spec:
       port: 4318
       protocol: TCP
       targetPort: 4318
-    - name: prometheus
-      port: 8889
+    - name: health
+      port: 13133
       protocol: TCP
-      targetPort: 8889
+      targetPort: 13133
 
 ---
 apiVersion: apps/v1

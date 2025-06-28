@@ -17,6 +17,7 @@ version = "0.1.0-SNAPSHOT"
 def grpcVersion = "1.45.1"
 def jacksonVersion = "2.13.2"
 def protocVersion = "3.20.0"
+def otelVersion = "1.21.0"
 
 tasks.withType(JavaCompile) {
     sourceCompatibility = JavaVersion.VERSION_18
@@ -38,7 +39,11 @@ dependencies {
                 "io.grpc:grpc-stub:${grpcVersion}",
                 "io.grpc:grpc-netty:${grpcVersion}",
                 "io.grpc:grpc-services:${grpcVersion}",
-                "org.apache.logging.log4j:log4j-core:2.17.2"
+                "org.apache.logging.log4j:log4j-core:2.17.2",
+                "io.opentelemetry:opentelemetry-api:${otelVersion}",
+                "io.opentelemetry:opentelemetry-sdk:${otelVersion}",
+                "io.opentelemetry:opentelemetry-exporter-otlp:${otelVersion}",
+                "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure:${otelVersion}"
 
         runtimeOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}",
                 "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}",
