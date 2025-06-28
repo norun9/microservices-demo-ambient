@@ -553,7 +553,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/google-samples/microservices-demo/currencyservice:v0.3.6
+        image: currencyservice-go:local
         ports:
         - name: grpc
           containerPort: 7000
