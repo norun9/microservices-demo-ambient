@@ -25,20 +25,22 @@ data:
         timeout: 1s
         send_batch_size: 1
     exporters:
-      # file:
-      #   path: /data/telemetry.jsonl
-      # jaeger:
-      #   endpoint: jaeger-collector.istio-system.svc.cluster.local:14250
-      #   tls:
-      #     insecure: true
-      #   sending_queue:
-      #     enabled: true
-      #   retry_on_failure:
-      #     enabled: true
-      # prometheus:
-      #   endpoint: "0.0.0.0:8889"
       logging:
         loglevel: debug
+      # 2) トレース専用の file exporter
+      file/traces: # OK
+        path: /data/traces.jsonl
+
+      # (3) メトリクス専用ファイルエクスポーター
+      file/metrics: # メトリクスだけ何も出力されていない。
+        path: /data/metrics.jsonl
+
+      # (4) ログ専用ファイルエクスポーター
+      file/logs: # OK
+        path: /data/logs.jsonl
+
+      prometheus:
+        endpoint: "0.0.0.0:8889"
     extensions:
       health_check:
     service:
@@ -51,15 +53,15 @@ data:
         traces:
           receivers: [otlp]
           processors: [batch]
-          exporters: [logging]
+          exporters: [file/traces]
         metrics:
           receivers: [otlp]
           processors: [batch]
-          exporters: [logging]
+          exporters: [file/metrics]
         logs:
           receivers: [otlp]
           processors: [batch]
-          exporters: [logging]
+          exporters: [file/logs,logging]
 ---
 apiVersion: v1
 kind: Service

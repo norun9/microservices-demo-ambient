@@ -1,5 +1,5 @@
 .SILENT:
-.PHONY: all delete-cluster create-cluster cert-manager namespace apply-cert-manager-yaml create-root-ca cert-manager-istio-csr label-crds istioctl-install istioctl-version helm-install addons-install kiali-install gateway-api istio-base apply-otel-telemetry create-demo-app build-loadgenerator deploy-app label-ambient enroll-waypoint label-use-waypoint
+.PHONY: all delete-cluster create-cluster cert-manager namespace apply-cert-manager-yaml create-root-ca cert-manager-istio-csr label-crds istioctl-install istioctl-version helm-install addons-install kiali-install gateway-api istio-base apply-otel-telemetry create-demo-app build-local-image deploy-app label-ambient enroll-waypoint label-use-waypoint
 
 # Tools
 HELM := helm
@@ -10,7 +10,7 @@ KIND := kind
 CLUSTER_NAME := demo
 KIND_CONFIG  := ~/kind-with-istio/kind-config.yaml
 
-all: delete-cluster create-cluster cert-manager namespace apply-cert-manager-yaml create-root-ca cert-manager-istio-csr label-crds istioctl-install istioctl-version helm-install addons-install kiali-install gateway-api istio-base apply-otel-telemetry create-demo-app build-loadgenerator deploy-app label-ambient enroll-waypoint label-use-waypoint
+all: delete-cluster create-cluster cert-manager namespace apply-cert-manager-yaml create-root-ca cert-manager-istio-csr label-crds istioctl-install istioctl-version helm-install addons-install kiali-install gateway-api istio-base create-demo-app apply-otel-telemetry build-local-image deploy-app label-ambient enroll-waypoint label-use-waypoint
 	@echo "✔ Full environment setup completed"
 
 #  1. Delete existing Kind cluster
@@ -42,25 +42,22 @@ namespace:
 apply-cert-manager-yaml:
 	@echo "[5/22] Applying cert-manager custom resources..."
 	@$(KUBECTL) apply -f ./release/cert-manager.yaml
+	@echo "  → Waiting for Certificate to be ready..."
+	@kubectl wait --for=condition=Ready certificate/istio-ca -n istio-system --timeout=120s
 
 #  6. Create istio-root-ca secret
-create-root-ca:
+create-root-ca: apply-cert-manager-yaml
 	@echo "[6/22] Creating/updating 'istio-root-ca' secret..."
-	@$(KUBECTL) get secret istio-ca -n istio-system \
-		-o go-template='{{index .data "tls.crt"}}' \
-	| base64 -d \
-	| $(KUBECTL) create secret generic istio-root-ca \
-		-n cert-manager \
-		--from-file=ca.pem=/dev/stdin \
-		--dry-run=client -o yaml \
-	| $(KUBECTL) apply -f -
+	@$(KUBECTL) get -n istio-system secret istio-ca -ogo-template='{{index .data "tls.crt"}}' | base64 -d > ca.pem
+	@$(KUBECTL) create secret generic -n cert-manager istio-root-ca --from-file=ca.pem=ca.pem
 
 #  7. Install or upgrade cert-manager-istio-csr
-cert-manager-istio-csr:
+cert-manager-istio-csr: create-root-ca
 	@echo "[7/22] Installing or upgrading cert-manager-istio-csr..."
 	@$(HELM) upgrade cert-manager-istio-csr jetstack/cert-manager-istio-csr \
 		--install \
 		--version=0.12.0 \
+		--wait \
 		--namespace cert-manager \
 		--set "app.tls.rootCAFile=/var/run/secrets/istio-csr/ca.pem" \
 		--set "app.tls.certificateDNSNames={cert-manager-istio-csr.cert-manager.svc,istio-csr.cert-manager.svc}" \
@@ -159,7 +156,7 @@ istio-base:
 apply-otel-telemetry:
 	@echo "[16/22] Applying OTel Collector and Telemetry manifests..."
 	@$(KUBECTL) apply -f ./release/otel-collector.yaml
-	@$(KUBECTL) apply -f ./release/telemetry.yaml
+	@$(KUBECTL) apply -f ./release/als-telemetry.yaml
 
 # 17. Create demo-app namespace
 create-demo-app:
@@ -167,13 +164,19 @@ create-demo-app:
 	@$(KUBECTL) create namespace demo-app 2>/dev/null || echo "  namespace already exists"
 
 # 18. Build and load loadgenerator image
-build-loadgenerator:
+build-local-image:
 	@echo "[18/22] Building and loading loadgenerator image..."
 	@cd ./src/k6-loadgenerator && docker build -t k6-loadgenerator:local .
 	@$(KIND) load docker-image k6-loadgenerator:local --name $(CLUSTER_NAME)
+	@cd ./src/adservice-go && docker build -t adservice-go:local .
+	@$(KIND) load docker-image adservice-go:local --name $(CLUSTER_NAME)
+	@cd ./src/cartservice-go && docker build -t cartservice-go:local .
+	@$(KIND) load docker-image cartservice-go:local --name $(CLUSTER_NAME)
+	@echo "  → Cleaning up Docker build cache..."
+	@docker builder prune -f
 
 # 19. Deploy application manifests
-deploy-app: create-demo-app build-loadgenerator
+deploy-app: create-demo-app build-local-image
 	@echo "[19/22] Deploying application manifests to 'demo-app'..."
 	@$(KUBECTL) apply -f ./release/kubernetes-manifests.yaml -n demo-app
 

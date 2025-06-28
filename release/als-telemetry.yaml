@@ -14,7 +14,6 @@ spec:
   - providers:
     - name: otel-als
 
-
 # metadata:
 #   name: otel-demo
 #   namespace: istio-system

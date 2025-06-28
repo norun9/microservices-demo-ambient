@@ -10,22 +10,21 @@ meshConfig:
       GRPC_ENFORCE_ALPN_ENABLED: "false"
   defaultProviders:
     accessLogging:
-      - otel-als                    # ← ここが正解。「v2 Telemetry」では defaultProviders に書く
+      - otel-als
+    # ───────────────────────────────────────────────────
+    # 1) メトリクスは全サイドカーから "otel" extensionProvider で送る
     metrics:
-      - prometheus                  # Istio が Prometheus 形式でメトリクスを吐く
+      - otel
+
+    # 2) トレースも全サイドカーから "otel" extensionProvider で送る
     tracing:
-      - otel                         # OTLP トレースを送る場合はここにプロバイダー名を列挙
+      - otel
 
   # ────────────────────────────────────────────────────
   # wire up your OTLP‐based extensionProvider for Istio’s mesh
   # Doc: https://istio.io/latest/docs/reference/config/istio.mesh.v1alpha1/#MeshConfig-ExtensionProvider
   extensionProviders:
-    # - name: otel-tracing
-    #   opentelemetry:
-    #     port: 4317
-    #     service: otel-collector.observability.svc.cluster.local
-    #     resource_detectors:
-    #       environment: {}
+    # 1) ALS (Access Log Service) 用
     - name: otel-als
       envoyOtelAls:
         service: otel-collector.observability.svc.cluster.local
@@ -36,14 +35,10 @@ meshConfig:
             namespace: "%ENVIRONMENT(POD_NAMESPACE)%"
             cluster: "%ENVIRONMENT(ISTIO_META_CLUSTER_ID)%"
             mesh: "%ENVIRONMENT(ISTIO_META_MESH_ID)%"
-    # - name: otel
-    #   envoyOtelAls:
-    #     service: opentelemetry-collector.istio-system.svc.cluster.local
-    #     port: 4317
-    #     logFormat:
-    #       labels:
-    #         pod: "%ENVIRONMENT(POD_NAME)%"
-    #         namespace: "%ENVIRONMENT(POD_NAMESPACE)%"
-    #         cluster: "%ENVIRONMENT(ISTIO_META_CLUSTER_ID)%"
-    #         mesh: "%ENVIRONMENT(ISTIO_META_MESH_ID)%"
-      
+     # OTLP（トレース＆メトリクス）送信用の extensionProvider
+    - name: otel
+      opentelemetry:
+        service: otel-collector.observability.svc.cluster.local
+        port: 4317
+        resource_detectors:
+          environment: {}
