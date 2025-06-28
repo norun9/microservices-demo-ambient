@@ -13,5 +13,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# protobuf ファイルから Go コードを生成するスクリプト
 
-python -m grpc_tools.protoc -I../../pb --python_out=. --grpc_python_out=. ../../pb/demo.proto
+set -e
+
+# 必要なツールをインストール
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+# genproto ディレクトリを作成
+mkdir -p genproto/hipstershop
+
+cd proto
+protoc \
+  --proto_path=. \
+  --go_out=../genproto/hipstershop       --go_opt=paths=source_relative \
+  --go-grpc_out=../genproto/hipstershop  --go-grpc_opt=paths=source_relative \
+  demo.proto
+
+echo "Generated Go code from protobuf files" 
