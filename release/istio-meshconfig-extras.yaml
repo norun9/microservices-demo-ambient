@@ -40,5 +40,6 @@ meshConfig:
       opentelemetry:
         service: otel-collector.observability.svc.cluster.local
         port: 4317
+        protocol: grpc
         resource_detectors:
           environment: {}

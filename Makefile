@@ -203,10 +203,16 @@ build-local-image: build-images
 	@echo "→ Cleaning up Docker build cache..."
 	@docker builder prune -f
 
+ROLL ?= false
+
 # 20. Deploy application manifests
 deploy-app: create-demo-app build-local-image
 	@echo "[20/22] Deploying application manifests to 'demo-app'..."
 	@$(KUBECTL) apply -f ./release/kubernetes-manifests.yaml -n demo-app
+	@if [ "$(ROLL)" = "true" ]; then \
+		echo "[20/22] Restarting deployments in 'demo-app' namespace..."; \
+		$(KUBECTL) rollout restart deployment -n demo-app; \
+	fi
 
 # 21. Label demo-app namespace for ambient mode
 label-ambient: create-demo-app

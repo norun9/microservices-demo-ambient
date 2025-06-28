@@ -13,16 +13,17 @@ import (
 
 	"github.com/norun9/microservices-demo-ambient/src/currencyservice-go/genproto/hipstershop"
 	"github.com/norun9/microservices-demo-ambient/src/currencyservice-go/services"
-
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"google.golang.org/grpc"
+
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
@@ -113,7 +114,7 @@ func initTracerProvider(ctx context.Context) (*sdktrace.TracerProvider, error) {
 	// 1) OTLP gRPC エクスポーター設定
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if endpoint == "" {
-		endpoint = "localhost:4317"
+		endpoint = "otel-collector.observability.svc.cluster.local:4317"
 	}
 	exporter, err := otlptracegrpc.New(ctx,
 		otlptracegrpc.WithEndpoint(endpoint),
@@ -126,7 +127,7 @@ func initTracerProvider(ctx context.Context) (*sdktrace.TracerProvider, error) {
 	// 2) リソース情報（サービス名・バージョンなど）を設定
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
-			semconv.ServiceNameKey.String("currencyservice"),
+			semconv.ServiceNameKey.String("cartservice"),
 			semconv.ServiceVersionKey.String("v1.0.0"),
 		),
 	)
