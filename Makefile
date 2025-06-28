@@ -1,16 +1,24 @@
 .SILENT:
-.PHONY: all delete-cluster create-cluster cert-manager namespace apply-cert-manager-yaml create-root-ca cert-manager-istio-csr label-crds istioctl-install istioctl-version helm-install addons-install kiali-install gateway-api istio-base apply-otel-telemetry create-demo-app build-local-image deploy-app label-ambient enroll-waypoint label-use-waypoint
+.PHONY: all delete-cluster create-cluster cert-manager namespace apply-cert-manager-yaml create-root-ca cert-manager-istio-csr \
+        label-crds istioctl-install istioctl-version helm-install addons-install kiali-install \
+        gateway-api istio-base apply-otel-telemetry create-demo-app build-images build-local-image \
+        deploy-app label-ambient enroll-waypoint label-use-waypoint \
+        build-load build-ad build-cart build-currency
 
 # Tools
 HELM := helm
 KUBECTL := kubectl
 KIND := kind
+MAKE := make
 
 # Cluster configuration
 CLUSTER_NAME := demo
 KIND_CONFIG  := ~/kind-with-istio/kind-config.yaml
 
-all: delete-cluster create-cluster cert-manager namespace apply-cert-manager-yaml create-root-ca cert-manager-istio-csr label-crds istioctl-install istioctl-version helm-install addons-install kiali-install gateway-api istio-base create-demo-app apply-otel-telemetry build-local-image deploy-app label-ambient enroll-waypoint label-use-waypoint
+all: delete-cluster create-cluster cert-manager namespace apply-cert-manager-yaml \
+     create-root-ca cert-manager-istio-csr label-crds istioctl-install istioctl-version \
+     helm-install addons-install kiali-install gateway-api istio-base create-demo-app \
+     apply-otel-telemetry build-local-image deploy-app label-ambient enroll-waypoint label-use-waypoint
 	@echo "✔ Full environment setup completed"
 
 #  1. Delete existing Kind cluster
@@ -43,12 +51,12 @@ apply-cert-manager-yaml:
 	@echo "[5/22] Applying cert-manager custom resources..."
 	@$(KUBECTL) apply -f ./release/cert-manager.yaml
 	@echo "  → Waiting for Certificate to be ready..."
-	@kubectl wait --for=condition=Ready certificate/istio-ca -n istio-system --timeout=120s
+	@$(KUBECTL) wait --for=condition=Ready certificate/istio-ca -n istio-system --timeout=120s
 
 #  6. Create istio-root-ca secret
 create-root-ca: apply-cert-manager-yaml
 	@echo "[6/22] Creating/updating 'istio-root-ca' secret..."
-	@$(KUBECTL) get -n istio-system secret istio-ca -ogo-template='{{index .data "tls.crt"}}' | base64 -d > ca.pem
+	@$(KUBECTL) get -n istio-system secret istio-ca -o go-template='{{index .data "tls.crt"}}' | base64 -d > ca.pem
 	@$(KUBECTL) create secret generic -n cert-manager istio-root-ca --from-file=ca.pem=ca.pem
 
 #  7. Install or upgrade cert-manager-istio-csr
@@ -80,7 +88,7 @@ label-crds:
 istioctl-install:
 	@echo "[9/22] Downloading istioctl..."
 	@curl -sL https://istio.io/downloadIstioctl | sh -
-	@export PATH=$HOME/.istioctl/bin:$PATH
+	@export PATH=$HOME/.istioctl/bin:$$PATH
 
 # 10. Verify istioctl version
 istioctl-version:
@@ -163,34 +171,60 @@ create-demo-app:
 	@echo "[17/22] Creating 'demo-app' namespace..."
 	@$(KUBECTL) create namespace demo-app 2>/dev/null || echo "  namespace already exists"
 
-# 18. Build and load loadgenerator image
-build-local-image:
-	@echo "[18/22] Building and loading loadgenerator image..."
-	@cd ./src/k6-loadgenerator && docker build -t k6-loadgenerator:local .
-	@$(KIND) load docker-image k6-loadgenerator:local --name $(CLUSTER_NAME)
-	@cd ./src/adservice-go && docker build -t adservice-go:local .
-	@$(KIND) load docker-image adservice-go:local --name $(CLUSTER_NAME)
-	@cd ./src/cartservice-go && docker build -t cartservice-go:local .
-	@$(KIND) load docker-image cartservice-go:local --name $(CLUSTER_NAME)
-	@echo "  → Cleaning up Docker build cache..."
+# 18. Build images in parallel
+build-images:
+	@echo "[18/22] Building images in parallel..."
+	$(MAKE) -j4 build-load build-ad build-cart build-currency
+
+# Individual build steps (executed by build-images)
+build-load:
+	@echo "    - Building k6-loadgenerator image..."
+	cd src/k6-loadgenerator && docker build -t k6-loadgenerator:local .
+
+build-ad:
+	@echo "    - Building adservice-go image..."
+	cd src/adservice-go && docker build -t adservice-go:local .
+
+build-cart:
+	@echo "    - Building cartservice-go image..."
+	cd src/cartservice-go && docker build -t cartservice-go:local .
+
+build-currency:
+	@echo "    - Building currencyservice-go image..."
+	cd src/currencyservice-go && docker build -t currencyservice-go:local .
+
+# 19. Load into kind and prune
+build-local-image: build-images
+	@echo "→ Loading images into kind cluster..."
+	@$(KIND) load docker-image k6-loadgenerator:local   --name $(CLUSTER_NAME)
+	@$(KIND) load docker-image adservice-go:local      --name $(CLUSTER_NAME)
+	@$(KIND) load docker-image cartservice-go:local    --name $(CLUSTER_NAME)
+	@$(KIND) load docker-image currencyservice-go:local --name $(CLUSTER_NAME)
+	@echo "→ Cleaning up Docker build cache..."
 	@docker builder prune -f
 
-# 19. Deploy application manifests
-deploy-app: create-demo-app build-local-image
-	@echo "[19/22] Deploying application manifests to 'demo-app'..."
-	@$(KUBECTL) apply -f ./release/kubernetes-manifests.yaml -n demo-app
+ROLL ?= false
 
-# 20. Label demo-app namespace for ambient mode
+# 20. Deploy application manifests
+deploy-app: create-demo-app build-local-image
+	@echo "[20/22] Deploying application manifests to 'demo-app'..."
+	@$(KUBECTL) apply -f ./release/kubernetes-manifests.yaml -n demo-app
+	@if [ "$(ROLL)" = "true" ]; then \
+		echo "[20/22] Restarting deployments in 'demo-app' namespace..."; \
+		$(KUBECTL) rollout restart deployment -n demo-app; \
+	fi
+
+# 21. Label demo-app namespace for ambient mode
 label-ambient: create-demo-app
-	@echo "[20/22] Labeling 'demo-app' namespace for ambient mode..."
+	@echo "[21/22] Labeling 'demo-app' namespace for ambient mode..."
 	@$(KUBECTL) label namespace demo-app istio.io/dataplane-mode=ambient --overwrite
 
-# 21. Enroll demo-app namespace with Waypoint
+# 22. Enroll demo-app namespace with Waypoint
 enroll-waypoint: label-ambient gateway-api
-	@echo "[21/22] Enrolling 'demo-app' namespace with Istio Waypoint..."
+	@echo "[22/22] Enrolling 'demo-app' namespace with Istio Waypoint..."
 	@istioctl waypoint apply -n demo-app --enroll-namespace
 
-# 22. Label demo-app to use Waypoint
+# 23. Label demo-app to use Waypoint
 label-use-waypoint: enroll-waypoint
-	@echo "[22/22] Labeling 'demo-app' namespace to use Waypoint..."
+	@echo "[23/22] Labeling 'demo-app' namespace to use Waypoint..."
 	@$(KUBECTL) label namespace demo-app istio.io/use-waypoint=waypoint --overwrite
