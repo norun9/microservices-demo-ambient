@@ -18,8 +18,8 @@ import (
 	"context"
 	"testing"
 
-	pb "github.com/GoogleCloudPlatform/microservices-demo/src/productcatalogservice/genproto/hipstershop"
 	"github.com/google/go-cmp/cmp"
+	pb "github.com/norun9/opentelemetry-microservices-demo/src/productcatalogservice-go/genproto/hipstershop"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
