@@ -1,4 +1,4 @@
-// paymentservice-go/main.go
+// recommendationservice-go/main.go
 
 package main
 
@@ -11,8 +11,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/norun9/microservices-demo-ambient/src/paymentservice-go/genproto/hipstershop"
-	"github.com/norun9/microservices-demo-ambient/src/paymentservice-go/services"
+	"github.com/norun9/microservices-demo-ambient/src/recommendationservice-go/genproto/hipstershop"
+	"github.com/norun9/microservices-demo-ambient/src/recommendationservice-go/services"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -50,20 +50,20 @@ func main() {
 	// ----------------------------------------------------------------
 
 	// ----------------------------------------------------------------
-	// 2) PaymentService の生成
-	log.Println("Initializing PaymentService...")
-	paymentSvc, err := services.NewPaymentService()
+	// 2) RecommendationService の生成
+	log.Println("Initializing RecommendationService...")
+	recommendationSvc, err := services.NewRecommendationService()
 	if err != nil {
-		log.Fatalf("failed to create PaymentService: %v", err)
+		log.Fatalf("failed to create RecommendationService: %v", err)
 	}
-	log.Println("PaymentService initialized successfully")
+	log.Println("RecommendationService initialized successfully")
 	// ----------------------------------------------------------------
 
 	// ----------------------------------------------------------------
 	// 3) gRPC サーバーの起動
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "50051"
+		port = "8080"
 	}
 	addr := fmt.Sprintf(":%s", port)
 	log.Printf("Starting gRPC server on %s\n", addr)
@@ -79,9 +79,9 @@ func main() {
 	)
 	log.Println("Created gRPC server with OpenTelemetry interceptors")
 
-	// PaymentService と HealthCheckService を登録
-	hipstershop.RegisterPaymentServiceServer(grpcServer, paymentSvc)
-	log.Println("Registered PaymentService")
+	// RecommendationService と HealthCheckService を登録
+	hipstershop.RegisterRecommendationServiceServer(grpcServer, recommendationSvc)
+	log.Println("Registered RecommendationService")
 
 	healthSrv := services.NewHealthCheckService()
 	healthpb.RegisterHealthServer(grpcServer, healthSrv)
@@ -100,7 +100,7 @@ func main() {
 	log.Println("All services registered, starting gRPC server...")
 
 	// サーバー起動を試みる
-	log.Printf("PaymentService gRPC server is listening on %s\n", addr)
+	log.Printf("RecommendationService gRPC server is listening on %s\n", addr)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve gRPC server: %v", err)
 	}
@@ -127,7 +127,7 @@ func initTracerProvider(ctx context.Context) (*sdktrace.TracerProvider, error) {
 	// 2) リソース情報（サービス名・バージョンなど）を設定
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
-			semconv.ServiceNameKey.String("paymentservice"),
+			semconv.ServiceNameKey.String("recommendationservice"),
 			semconv.ServiceVersionKey.String("v1.0.0"),
 		),
 	)

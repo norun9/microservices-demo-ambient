@@ -166,7 +166,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/google-samples/microservices-demo/recommendationservice:v0.3.6
+        image: recommendationservice-go:local
         ports:
         - containerPort: 8080
         readinessProbe:
@@ -182,6 +182,10 @@ spec:
           value: "8080"
         - name: PRODUCT_CATALOG_SERVICE_ADDR
           value: "productcatalogservice:3550"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "dns:///otel-collector.observability.svc.cluster.local:4317"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "service.name=recommendationservice,service.version=1.0.0"
         - name: DISABLE_TRACING
           value: "0"
         - name: DISABLE_PROFILER
