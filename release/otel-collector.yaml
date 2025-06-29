@@ -44,7 +44,6 @@ data:
         endpoint: jaeger-collector.istio-system:14250
         tls:
           insecure: true
-        protocol: grpc
 
       prometheus:
         endpoint: "0.0.0.0:8889"
@@ -60,7 +59,7 @@ data:
         traces:
           receivers: [otlp]
           processors: [batch]
-          exporters: [file/traces, jaeger]
+          exporters: [file/traces,jaeger]
         metrics:
           receivers: [otlp]
           processors: [batch]

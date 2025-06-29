@@ -11,7 +11,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GoogleCloudPlatform/microservices-demo/src/emailservice-go/genproto/hipstershop"
+	"github.com/norun9/microservices-demo-ambient/src/emailservice-go/genproto/hipstershop"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -80,9 +80,7 @@ func (e *EmailService) renderEmailTemplate(order *hipstershop.OrderResult) (stri
 	)
 
 	var buf bytes.Buffer
-	err := e.template.ExecuteTemplate(&buf, "confirmation.html", map[string]interface{}{
-		"order": order,
-	})
+	err := e.template.ExecuteTemplate(&buf, "confirmation.html", order)
 	if err != nil {
 		return "", fmt.Errorf("failed to execute template: %w", err)
 	}
@@ -122,8 +120,15 @@ func loadEmailTemplate() (*template.Template, error) {
 		return nil, fmt.Errorf("template file not found: %s", templatePath)
 	}
 
+	// カスタム関数を定義
+	funcMap := template.FuncMap{
+		"div": func(a, b int64) int64 {
+			return a / b
+		},
+	}
+
 	// テンプレートの読み込みと解析
-	tmpl, err := template.ParseFiles(templatePath)
+	tmpl, err := template.New("confirmation.html").Funcs(funcMap).ParseFiles(templatePath)
 	if err != nil {
 		span.SetAttributes(attribute.String("error", err.Error()))
 		return nil, fmt.Errorf("failed to parse template: %w", err)
