@@ -29,7 +29,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: recommendationservice
+        image: recommendationservice-go:local
         ports:
         - containerPort: 8080
         readinessProbe:
@@ -45,8 +45,8 @@ spec:
           value: "8080"
         - name: PRODUCT_CATALOG_SERVICE_ADDR
           value: "productcatalogservice:3550"
-        - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
-          value: "http://otelcollector:4317"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "otelcollector:4317"
         - name: OTEL_RESOURCE_ATTRIBUTES
           value: "service.name=recommendationservice,service.version=1.0.0"
         resources:
