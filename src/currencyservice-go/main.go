@@ -114,7 +114,7 @@ func initTracerProvider(ctx context.Context) (*sdktrace.TracerProvider, error) {
 	// 1) OTLP gRPC エクスポーター設定
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if endpoint == "" {
-		endpoint = "otel-collector.observability.svc.cluster.local:4317"
+		endpoint = "dns:///otel-collector.observability.svc.cluster.local:4317"
 	}
 	exporter, err := otlptracegrpc.New(ctx,
 		otlptracegrpc.WithEndpoint(endpoint),
@@ -127,7 +127,7 @@ func initTracerProvider(ctx context.Context) (*sdktrace.TracerProvider, error) {
 	// 2) リソース情報（サービス名・バージョンなど）を設定
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
-			semconv.ServiceNameKey.String("cartservice"),
+			semconv.ServiceNameKey.String("currencyservice"),
 			semconv.ServiceVersionKey.String("v1.0.0"),
 		),
 	)

@@ -1852,7 +1852,7 @@ const file_demo_proto_rawDesc = "" +
 	"\n" +
 	"PlaceOrder\x12\x1e.hipstershop.PlaceOrderRequest\x1a\x1f.hipstershop.PlaceOrderResponse\"\x002H\n" +
 	"\tAdService\x12;\n" +
-	"\x06GetAds\x12\x16.hipstershop.AdRequest\x1a\x17.hipstershop.AdResponse\"\x00BcZagithub.com/norun9/microservices-demo-ambient/src/emailservice-go/genproto/hipstershop;hipstershopb\x06proto3"
+	"\x06GetAds\x12\x16.hipstershop.AdRequest\x1a\x17.hipstershop.AdResponse\"\x00BeZcgithub.com/norun9/microservices-demo-ambient/src/paymentservice-go/genproto/hipstershop;hipstershopb\x06proto3"
 
 var (
 	file_demo_proto_rawDescOnce sync.Once

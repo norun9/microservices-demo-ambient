@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package hipstershop;
 
-option go_package = "github.com/norun9/microservices-demo-ambient/src/emailservice-go/genproto/hipstershop;hipstershop";
+option go_package = "github.com/norun9/microservices-demo-ambient/src/paymentservice-go/genproto/hipstershop;hipstershop";
 
 // -----------------Cart service-----------------
 

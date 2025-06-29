@@ -1,4 +1,4 @@
-// emailservice-go/main.go
+// paymentservice-go/main.go
 
 package main
 
@@ -10,10 +10,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
-	"github.com/norun9/microservices-demo-ambient/src/emailservice-go/genproto/hipstershop"
-	"github.com/norun9/microservices-demo-ambient/src/emailservice-go/services"
+	"github.com/norun9/microservices-demo-ambient/src/paymentservice-go/genproto/hipstershop"
+	"github.com/norun9/microservices-demo-ambient/src/paymentservice-go/services"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -51,20 +50,20 @@ func main() {
 	// ----------------------------------------------------------------
 
 	// ----------------------------------------------------------------
-	// 2) EmailService の生成
-	log.Println("Initializing EmailService...")
-	emailSvc, err := services.NewEmailService()
+	// 2) PaymentService の生成
+	log.Println("Initializing PaymentService...")
+	paymentSvc, err := services.NewPaymentService()
 	if err != nil {
-		log.Fatalf("failed to create EmailService: %v", err)
+		log.Fatalf("failed to create PaymentService: %v", err)
 	}
-	log.Println("EmailService initialized successfully")
+	log.Println("PaymentService initialized successfully")
 	// ----------------------------------------------------------------
 
 	// ----------------------------------------------------------------
 	// 3) gRPC サーバーの起動
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "50051"
 	}
 	addr := fmt.Sprintf(":%s", port)
 	log.Printf("Starting gRPC server on %s\n", addr)
@@ -80,9 +79,9 @@ func main() {
 	)
 	log.Println("Created gRPC server with OpenTelemetry interceptors")
 
-	// EmailService と HealthCheckService を登録
-	hipstershop.RegisterEmailServiceServer(grpcServer, emailSvc)
-	log.Println("Registered EmailService")
+	// PaymentService と HealthCheckService を登録
+	hipstershop.RegisterPaymentServiceServer(grpcServer, paymentSvc)
+	log.Println("Registered PaymentService")
 
 	healthSrv := services.NewHealthCheckService()
 	healthpb.RegisterHealthServer(grpcServer, healthSrv)
@@ -101,7 +100,7 @@ func main() {
 	log.Println("All services registered, starting gRPC server...")
 
 	// サーバー起動を試みる
-	log.Printf("EmailService gRPC server is listening on %s\n", addr)
+	log.Printf("PaymentService gRPC server is listening on %s\n", addr)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve gRPC server: %v", err)
 	}
@@ -115,15 +114,11 @@ func initTracerProvider(ctx context.Context) (*sdktrace.TracerProvider, error) {
 	// 1) OTLP gRPC エクスポーター設定
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if endpoint == "" {
-		endpoint = "dns:///otel-collector.observability.svc.cluster.local:4317"
+		endpoint = "otel-collector.observability.svc.cluster.local:4317"
 	}
-
 	exporter, err := otlptracegrpc.New(ctx,
 		otlptracegrpc.WithEndpoint(endpoint),
 		otlptracegrpc.WithInsecure(),
-		otlptracegrpc.WithDialOption(grpc.WithConnectParams(
-			grpc.ConnectParams{MinConnectTimeout: 5 * time.Second},
-		)),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OTLP exporter: %w", err)
@@ -132,7 +127,7 @@ func initTracerProvider(ctx context.Context) (*sdktrace.TracerProvider, error) {
 	// 2) リソース情報（サービス名・バージョンなど）を設定
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
-			semconv.ServiceNameKey.String("emailservice"),
+			semconv.ServiceNameKey.String("paymentservice"),
 			semconv.ServiceVersionKey.String("v1.0.0"),
 		),
 	)

@@ -3,7 +3,7 @@
         label-crds istioctl-install istioctl-version helm-install addons-install kiali-install \
         gateway-api istio-base apply-otel-telemetry create-demo-app build-images build-local-image \
         deploy-app label-ambient enroll-waypoint label-use-waypoint \
-        build-load build-ad build-cart build-currency build-email
+        build-load build-ad build-cart build-currency build-email build-payment
 
 # Tools
 HELM := helm
@@ -174,7 +174,7 @@ create-demo-app:
 # 18. Build images in parallel
 build-images:
 	@echo "[18/22] Building images in parallel..."
-	$(MAKE) -j5 build-load build-ad build-cart build-currency build-email
+	$(MAKE) -j6 build-load build-ad build-cart build-currency build-email build-payment
 
 # Individual build steps (executed by build-images)
 build-load:
@@ -197,6 +197,10 @@ build-email:
 	@echo "    - Building emailservice-go image..."
 	cd src/emailservice-go && docker build -t emailservice-go:local .
 
+build-payment:
+	@echo "    - Building paymentservice-go image..."
+	cd src/paymentservice-go && docker build -t paymentservice-go:local .
+
 # 19. Load into kind and prune
 build-local-image: build-images
 	@echo "→ Loading images into kind cluster..."
@@ -205,6 +209,7 @@ build-local-image: build-images
 	@$(KIND) load docker-image cartservice-go:local    --name $(CLUSTER_NAME)
 	@$(KIND) load docker-image currencyservice-go:local --name $(CLUSTER_NAME)
 	@$(KIND) load docker-image emailservice-go:local   --name $(CLUSTER_NAME)
+	@$(KIND) load docker-image paymentservice-go:local --name $(CLUSTER_NAME)
 	@echo "→ Cleaning up Docker build cache..."
 	@docker builder prune -f
 
