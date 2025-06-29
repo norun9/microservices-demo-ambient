@@ -1,21 +1,77 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-conf
+  labels:
+    app: otel-collector
+data:
+  otel-collector-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+    processors:
+      batch:
+        timeout: 1s
+        send_batch_size: 1
+    exporters:
+      logging:
+        loglevel: debug
+      # File exporter for traces
+      file:
+        path: /data/traces.jsonl
+      # Jaeger exporter for visualization
+      jaeger:
+        endpoint: jaeger-collector.istio-system:14250
+        tls:
+          insecure: true
+        protocol: grpc
+      # Prometheus exporter for metrics
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+    extensions:
+      health_check:
+    service:
+      extensions:
+        - health_check
+      telemetry:
+        logs:
+          level: "DEBUG"
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [file, jaeger]
+        metrics:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [prometheus]
+        logs:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [logging]
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: otelcollector
+  name: otel-collector
 spec:
   selector:
     matchLabels:
-      app: otelcollector
+      app: otel-collector
   template:
     metadata:
       labels:
-        app: otelcollector
+        app: otel-collector
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
       containers:
-      - name: otelcollector
-        image: otelcollector
+      - name: otel-collector
+        image: otel/opentelemetry-collector:0.54.0
         ports:
         - containerPort: 1888
         - containerPort: 8888
@@ -30,15 +86,32 @@ spec:
           limits:
             cpu: 300m
             memory: 300Mi
+        volumeMounts:
+        - name: otel-collector-config
+          mountPath: /conf
+        - name: data
+          mountPath: /data
+      - name: debug-shell
+        image: busybox:1.35.0
+        command: ['sleep', '1d']
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: otel-collector-config
+        configMap:
+          name: otel-collector-conf
+      - name: data
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: otelcollector
+  name: otel-collector
 spec:
   type: ClusterIP
   selector:
-    app: otelcollector
+    app: otel-collector
   ports:
   - name: "1888"
     port: 1888
