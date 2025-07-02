@@ -30,7 +30,7 @@ COPY --from=builder /bin/adservice-go /usr/local/bin/adservice-go
 EXPOSE 9555
 
 # OpenTelemetry設定
-ENV OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector.observability.svc.cluster.local:4317
+ENV OTEL_EXPORTER_OTLP_ENDPOINT=dsn:///otel-collector.observability.svc.cluster.local:4317
 ENV OTEL_SERVICE_NAME=adservice
 ENV OTEL_SERVICE_VERSION=v1.0.0
 

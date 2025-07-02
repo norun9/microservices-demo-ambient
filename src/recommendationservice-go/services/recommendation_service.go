@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/norun9/microservices-demo-ambient/src/recommendationservice-go/genproto/hipstershop"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -31,7 +32,11 @@ func NewRecommendationService() (*RecommendationService, error) {
 		log.Fatal("PRODUCT_CATALOG_SERVICE_ADDR environment variable not set")
 	}
 
-	conn, err := grpc.Dial(catalogAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(catalogAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	)
+
 	if err != nil {
 		return nil, err
 	}

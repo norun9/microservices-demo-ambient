@@ -5,8 +5,8 @@ package services
 import (
 	"context"
 
+	"github.com/norun9/microservices-demo-ambient/genproto/hipstershop"
 	"github.com/norun9/microservices-demo-ambient/src/cartservice-go/cartstore"
-	"github.com/norun9/microservices-demo-ambient/src/cartservice-go/genproto/hipstershop"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

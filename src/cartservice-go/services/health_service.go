@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/norun9/microservices-demo-ambient/src/cartservice-go/cartstore"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	healthpb "github.com/norun9/microservices-demo-ambient/src/cartservice-go/genproto/hipstershop/grpc/health/v1"
 )
 
 // HealthCheckService は gRPC の Health チェックを実装します
@@ -28,10 +28,4 @@ func (h *HealthCheckService) Check(ctx context.Context, req *healthpb.HealthChec
 		return &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING}, nil
 	}
 	return &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_NOT_SERVING}, nil
-}
-
-// Watch RPC は未実装（クライアントがストリーミングしない限り必要ありません）
-func (h *HealthCheckService) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_WatchServer) error {
-	// Watch は省略。実装例では単に終了させるかエラーを返すだけ
-	return nil
 }

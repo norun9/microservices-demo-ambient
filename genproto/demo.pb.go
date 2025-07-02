@@ -18,7 +18,7 @@
 // 	protoc        v5.29.3
 // source: demo.proto
 
-package hipstershop
+package genproto
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -1721,21 +1721,21 @@ var File_demo_proto protoreflect.FileDescriptor
 const file_demo_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"demo.proto\x12\vhipstershop\"E\n" +
+	"demo.proto\x12\bgenproto\"E\n" +
 	"\bCartItem\x12\x1d\n" +
 	"\n" +
 	"product_id\x18\x01 \x01(\tR\tproductId\x12\x1a\n" +
-	"\bquantity\x18\x02 \x01(\x05R\bquantity\"T\n" +
+	"\bquantity\x18\x02 \x01(\x05R\bquantity\"Q\n" +
 	"\x0eAddItemRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12)\n" +
-	"\x04item\x18\x02 \x01(\v2\x15.hipstershop.CartItemR\x04item\"+\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12&\n" +
+	"\x04item\x18\x02 \x01(\v2\x12.genproto.CartItemR\x04item\"+\n" +
 	"\x10EmptyCartRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\")\n" +
 	"\x0eGetCartRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"L\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"I\n" +
 	"\x04Cart\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12+\n" +
-	"\x05items\x18\x02 \x03(\v2\x15.hipstershop.CartItemR\x05items\"\a\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12(\n" +
+	"\x05items\x18\x02 \x03(\v2\x12.genproto.CartItemR\x05items\"\a\n" +
 	"\x05Empty\"V\n" +
 	"\x1aListRecommendationsRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1f\n" +
@@ -1743,32 +1743,32 @@ const file_demo_proto_rawDesc = "" +
 	"productIds\">\n" +
 	"\x1bListRecommendationsResponse\x12\x1f\n" +
 	"\vproduct_ids\x18\x01 \x03(\tR\n" +
-	"productIds\"\xba\x01\n" +
+	"productIds\"\xb7\x01\n" +
 	"\aProduct\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x18\n" +
-	"\apicture\x18\x04 \x01(\tR\apicture\x12/\n" +
-	"\tprice_usd\x18\x05 \x01(\v2\x12.hipstershop.MoneyR\bpriceUsd\x12\x1e\n" +
+	"\apicture\x18\x04 \x01(\tR\apicture\x12,\n" +
+	"\tprice_usd\x18\x05 \x01(\v2\x0f.genproto.MoneyR\bpriceUsd\x12\x1e\n" +
 	"\n" +
 	"categories\x18\x06 \x03(\tR\n" +
-	"categories\"H\n" +
-	"\x14ListProductsResponse\x120\n" +
-	"\bproducts\x18\x01 \x03(\v2\x14.hipstershop.ProductR\bproducts\"#\n" +
+	"categories\"E\n" +
+	"\x14ListProductsResponse\x12-\n" +
+	"\bproducts\x18\x01 \x03(\v2\x11.genproto.ProductR\bproducts\"#\n" +
 	"\x11GetProductRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"-\n" +
 	"\x15SearchProductsRequest\x12\x14\n" +
-	"\x05query\x18\x01 \x01(\tR\x05query\"H\n" +
-	"\x16SearchProductsResponse\x12.\n" +
-	"\aresults\x18\x01 \x03(\v2\x14.hipstershop.ProductR\aresults\"n\n" +
-	"\x0fGetQuoteRequest\x12.\n" +
-	"\aaddress\x18\x01 \x01(\v2\x14.hipstershop.AddressR\aaddress\x12+\n" +
-	"\x05items\x18\x02 \x03(\v2\x15.hipstershop.CartItemR\x05items\"A\n" +
-	"\x10GetQuoteResponse\x12-\n" +
-	"\bcost_usd\x18\x01 \x01(\v2\x12.hipstershop.MoneyR\acostUsd\"o\n" +
-	"\x10ShipOrderRequest\x12.\n" +
-	"\aaddress\x18\x01 \x01(\v2\x14.hipstershop.AddressR\aaddress\x12+\n" +
-	"\x05items\x18\x02 \x03(\v2\x15.hipstershop.CartItemR\x05items\"4\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\"E\n" +
+	"\x16SearchProductsResponse\x12+\n" +
+	"\aresults\x18\x01 \x03(\v2\x11.genproto.ProductR\aresults\"h\n" +
+	"\x0fGetQuoteRequest\x12+\n" +
+	"\aaddress\x18\x01 \x01(\v2\x11.genproto.AddressR\aaddress\x12(\n" +
+	"\x05items\x18\x02 \x03(\v2\x12.genproto.CartItemR\x05items\">\n" +
+	"\x10GetQuoteResponse\x12*\n" +
+	"\bcost_usd\x18\x01 \x01(\v2\x0f.genproto.MoneyR\acostUsd\"i\n" +
+	"\x10ShipOrderRequest\x12+\n" +
+	"\aaddress\x18\x01 \x01(\v2\x11.genproto.AddressR\aaddress\x12(\n" +
+	"\x05items\x18\x02 \x03(\v2\x12.genproto.CartItemR\x05items\"4\n" +
 	"\x11ShipOrderResponse\x12\x1f\n" +
 	"\vtracking_id\x18\x01 \x01(\tR\n" +
 	"trackingId\"\x8f\x01\n" +
@@ -1783,76 +1783,76 @@ const file_demo_proto_rawDesc = "" +
 	"\x05units\x18\x02 \x01(\x03R\x05units\x12\x14\n" +
 	"\x05nanos\x18\x03 \x01(\x05R\x05nanos\"G\n" +
 	"\x1eGetSupportedCurrenciesResponse\x12%\n" +
-	"\x0ecurrency_codes\x18\x01 \x03(\tR\rcurrencyCodes\"\\\n" +
-	"\x19CurrencyConversionRequest\x12&\n" +
-	"\x04from\x18\x01 \x01(\v2\x12.hipstershop.MoneyR\x04from\x12\x17\n" +
+	"\x0ecurrency_codes\x18\x01 \x03(\tR\rcurrencyCodes\"Y\n" +
+	"\x19CurrencyConversionRequest\x12#\n" +
+	"\x04from\x18\x01 \x01(\v2\x0f.genproto.MoneyR\x04from\x12\x17\n" +
 	"\ato_code\x18\x02 \x01(\tR\x06toCode\"\xe6\x01\n" +
 	"\x0eCreditCardInfo\x12,\n" +
 	"\x12credit_card_number\x18\x01 \x01(\tR\x10creditCardNumber\x12&\n" +
 	"\x0fcredit_card_cvv\x18\x02 \x01(\x05R\rcreditCardCvv\x12=\n" +
 	"\x1bcredit_card_expiration_year\x18\x03 \x01(\x05R\x18creditCardExpirationYear\x12?\n" +
-	"\x1ccredit_card_expiration_month\x18\x04 \x01(\x05R\x19creditCardExpirationMonth\"y\n" +
-	"\rChargeRequest\x12*\n" +
-	"\x06amount\x18\x01 \x01(\v2\x12.hipstershop.MoneyR\x06amount\x12<\n" +
-	"\vcredit_card\x18\x02 \x01(\v2\x1b.hipstershop.CreditCardInfoR\n" +
+	"\x1ccredit_card_expiration_month\x18\x04 \x01(\x05R\x19creditCardExpirationMonth\"s\n" +
+	"\rChargeRequest\x12'\n" +
+	"\x06amount\x18\x01 \x01(\v2\x0f.genproto.MoneyR\x06amount\x129\n" +
+	"\vcredit_card\x18\x02 \x01(\v2\x18.genproto.CreditCardInfoR\n" +
 	"creditCard\"7\n" +
 	"\x0eChargeResponse\x12%\n" +
-	"\x0etransaction_id\x18\x01 \x01(\tR\rtransactionId\"^\n" +
-	"\tOrderItem\x12)\n" +
-	"\x04item\x18\x01 \x01(\v2\x15.hipstershop.CartItemR\x04item\x12&\n" +
-	"\x04cost\x18\x02 \x01(\v2\x12.hipstershop.MoneyR\x04cost\"\x82\x02\n" +
+	"\x0etransaction_id\x18\x01 \x01(\tR\rtransactionId\"X\n" +
+	"\tOrderItem\x12&\n" +
+	"\x04item\x18\x01 \x01(\v2\x12.genproto.CartItemR\x04item\x12#\n" +
+	"\x04cost\x18\x02 \x01(\v2\x0f.genproto.MoneyR\x04cost\"\xf9\x01\n" +
 	"\vOrderResult\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\tR\aorderId\x120\n" +
-	"\x14shipping_tracking_id\x18\x02 \x01(\tR\x12shippingTrackingId\x127\n" +
-	"\rshipping_cost\x18\x03 \x01(\v2\x12.hipstershop.MoneyR\fshippingCost\x12?\n" +
-	"\x10shipping_address\x18\x04 \x01(\v2\x14.hipstershop.AddressR\x0fshippingAddress\x12,\n" +
-	"\x05items\x18\x05 \x03(\v2\x16.hipstershop.OrderItemR\x05items\"d\n" +
+	"\x14shipping_tracking_id\x18\x02 \x01(\tR\x12shippingTrackingId\x124\n" +
+	"\rshipping_cost\x18\x03 \x01(\v2\x0f.genproto.MoneyR\fshippingCost\x12<\n" +
+	"\x10shipping_address\x18\x04 \x01(\v2\x11.genproto.AddressR\x0fshippingAddress\x12)\n" +
+	"\x05items\x18\x05 \x03(\v2\x13.genproto.OrderItemR\x05items\"a\n" +
 	"\x1cSendOrderConfirmationRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12.\n" +
-	"\x05order\x18\x02 \x01(\v2\x18.hipstershop.OrderResultR\x05order\"\xd5\x01\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12+\n" +
+	"\x05order\x18\x02 \x01(\v2\x15.genproto.OrderResultR\x05order\"\xcf\x01\n" +
 	"\x11PlaceOrderRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12#\n" +
-	"\ruser_currency\x18\x02 \x01(\tR\fuserCurrency\x12.\n" +
-	"\aaddress\x18\x03 \x01(\v2\x14.hipstershop.AddressR\aaddress\x12\x14\n" +
-	"\x05email\x18\x05 \x01(\tR\x05email\x12<\n" +
-	"\vcredit_card\x18\x06 \x01(\v2\x1b.hipstershop.CreditCardInfoR\n" +
-	"creditCard\"D\n" +
-	"\x12PlaceOrderResponse\x12.\n" +
-	"\x05order\x18\x01 \x01(\v2\x18.hipstershop.OrderResultR\x05order\".\n" +
+	"\ruser_currency\x18\x02 \x01(\tR\fuserCurrency\x12+\n" +
+	"\aaddress\x18\x03 \x01(\v2\x11.genproto.AddressR\aaddress\x12\x14\n" +
+	"\x05email\x18\x05 \x01(\tR\x05email\x129\n" +
+	"\vcredit_card\x18\x06 \x01(\v2\x18.genproto.CreditCardInfoR\n" +
+	"creditCard\"A\n" +
+	"\x12PlaceOrderResponse\x12+\n" +
+	"\x05order\x18\x01 \x01(\v2\x15.genproto.OrderResultR\x05order\".\n" +
 	"\tAdRequest\x12!\n" +
-	"\fcontext_keys\x18\x01 \x03(\tR\vcontextKeys\"/\n" +
+	"\fcontext_keys\x18\x01 \x03(\tR\vcontextKeys\",\n" +
 	"\n" +
-	"AdResponse\x12!\n" +
-	"\x03ads\x18\x01 \x03(\v2\x0f.hipstershop.AdR\x03ads\";\n" +
+	"AdResponse\x12\x1e\n" +
+	"\x03ads\x18\x01 \x03(\v2\f.genproto.AdR\x03ads\";\n" +
 	"\x02Ad\x12!\n" +
 	"\fredirect_url\x18\x01 \x01(\tR\vredirectUrl\x12\x12\n" +
-	"\x04text\x18\x02 \x01(\tR\x04text2\xca\x01\n" +
-	"\vCartService\x12<\n" +
-	"\aAddItem\x12\x1b.hipstershop.AddItemRequest\x1a\x12.hipstershop.Empty\"\x00\x12;\n" +
-	"\aGetCart\x12\x1b.hipstershop.GetCartRequest\x1a\x11.hipstershop.Cart\"\x00\x12@\n" +
-	"\tEmptyCart\x12\x1d.hipstershop.EmptyCartRequest\x1a\x12.hipstershop.Empty\"\x002\x83\x01\n" +
-	"\x15RecommendationService\x12j\n" +
-	"\x13ListRecommendations\x12'.hipstershop.ListRecommendationsRequest\x1a(.hipstershop.ListRecommendationsResponse\"\x002\x83\x02\n" +
-	"\x15ProductCatalogService\x12G\n" +
-	"\fListProducts\x12\x12.hipstershop.Empty\x1a!.hipstershop.ListProductsResponse\"\x00\x12D\n" +
+	"\x04text\x18\x02 \x01(\tR\x04text2\xb8\x01\n" +
+	"\vCartService\x126\n" +
+	"\aAddItem\x12\x18.genproto.AddItemRequest\x1a\x0f.genproto.Empty\"\x00\x125\n" +
+	"\aGetCart\x12\x18.genproto.GetCartRequest\x1a\x0e.genproto.Cart\"\x00\x12:\n" +
+	"\tEmptyCart\x12\x1a.genproto.EmptyCartRequest\x1a\x0f.genproto.Empty\"\x002}\n" +
+	"\x15RecommendationService\x12d\n" +
+	"\x13ListRecommendations\x12$.genproto.ListRecommendationsRequest\x1a%.genproto.ListRecommendationsResponse\"\x002\xf1\x01\n" +
+	"\x15ProductCatalogService\x12A\n" +
+	"\fListProducts\x12\x0f.genproto.Empty\x1a\x1e.genproto.ListProductsResponse\"\x00\x12>\n" +
 	"\n" +
-	"GetProduct\x12\x1e.hipstershop.GetProductRequest\x1a\x14.hipstershop.Product\"\x00\x12[\n" +
-	"\x0eSearchProducts\x12\".hipstershop.SearchProductsRequest\x1a#.hipstershop.SearchProductsResponse\"\x002\xaa\x01\n" +
-	"\x0fShippingService\x12I\n" +
-	"\bGetQuote\x12\x1c.hipstershop.GetQuoteRequest\x1a\x1d.hipstershop.GetQuoteResponse\"\x00\x12L\n" +
-	"\tShipOrder\x12\x1d.hipstershop.ShipOrderRequest\x1a\x1e.hipstershop.ShipOrderResponse\"\x002\xb7\x01\n" +
-	"\x0fCurrencyService\x12[\n" +
-	"\x16GetSupportedCurrencies\x12\x12.hipstershop.Empty\x1a+.hipstershop.GetSupportedCurrenciesResponse\"\x00\x12G\n" +
-	"\aConvert\x12&.hipstershop.CurrencyConversionRequest\x1a\x12.hipstershop.Money\"\x002U\n" +
-	"\x0ePaymentService\x12C\n" +
-	"\x06Charge\x12\x1a.hipstershop.ChargeRequest\x1a\x1b.hipstershop.ChargeResponse\"\x002h\n" +
-	"\fEmailService\x12X\n" +
-	"\x15SendOrderConfirmation\x12).hipstershop.SendOrderConfirmationRequest\x1a\x12.hipstershop.Empty\"\x002b\n" +
-	"\x0fCheckoutService\x12O\n" +
+	"GetProduct\x12\x1b.genproto.GetProductRequest\x1a\x11.genproto.Product\"\x00\x12U\n" +
+	"\x0eSearchProducts\x12\x1f.genproto.SearchProductsRequest\x1a .genproto.SearchProductsResponse\"\x002\x9e\x01\n" +
+	"\x0fShippingService\x12C\n" +
+	"\bGetQuote\x12\x19.genproto.GetQuoteRequest\x1a\x1a.genproto.GetQuoteResponse\"\x00\x12F\n" +
+	"\tShipOrder\x12\x1a.genproto.ShipOrderRequest\x1a\x1b.genproto.ShipOrderResponse\"\x002\xab\x01\n" +
+	"\x0fCurrencyService\x12U\n" +
+	"\x16GetSupportedCurrencies\x12\x0f.genproto.Empty\x1a(.genproto.GetSupportedCurrenciesResponse\"\x00\x12A\n" +
+	"\aConvert\x12#.genproto.CurrencyConversionRequest\x1a\x0f.genproto.Money\"\x002O\n" +
+	"\x0ePaymentService\x12=\n" +
+	"\x06Charge\x12\x17.genproto.ChargeRequest\x1a\x18.genproto.ChargeResponse\"\x002b\n" +
+	"\fEmailService\x12R\n" +
+	"\x15SendOrderConfirmation\x12&.genproto.SendOrderConfirmationRequest\x1a\x0f.genproto.Empty\"\x002\\\n" +
+	"\x0fCheckoutService\x12I\n" +
 	"\n" +
-	"PlaceOrder\x12\x1e.hipstershop.PlaceOrderRequest\x1a\x1f.hipstershop.PlaceOrderResponse\"\x002H\n" +
-	"\tAdService\x12;\n" +
-	"\x06GetAds\x12\x16.hipstershop.AdRequest\x1a\x17.hipstershop.AdResponse\"\x00B\x16Z\x14genproto/hipstershopb\x06proto3"
+	"PlaceOrder\x12\x1b.genproto.PlaceOrderRequest\x1a\x1c.genproto.PlaceOrderResponse\"\x002B\n" +
+	"\tAdService\x125\n" +
+	"\x06GetAds\x12\x13.genproto.AdRequest\x1a\x14.genproto.AdResponse\"\x00B7Z5github.com/norun9/microservices-demo-ambient/genprotob\x06proto3"
 
 var (
 	file_demo_proto_rawDescOnce sync.Once
@@ -1868,93 +1868,93 @@ func file_demo_proto_rawDescGZIP() []byte {
 
 var file_demo_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
 var file_demo_proto_goTypes = []any{
-	(*CartItem)(nil),                       // 0: hipstershop.CartItem
-	(*AddItemRequest)(nil),                 // 1: hipstershop.AddItemRequest
-	(*EmptyCartRequest)(nil),               // 2: hipstershop.EmptyCartRequest
-	(*GetCartRequest)(nil),                 // 3: hipstershop.GetCartRequest
-	(*Cart)(nil),                           // 4: hipstershop.Cart
-	(*Empty)(nil),                          // 5: hipstershop.Empty
-	(*ListRecommendationsRequest)(nil),     // 6: hipstershop.ListRecommendationsRequest
-	(*ListRecommendationsResponse)(nil),    // 7: hipstershop.ListRecommendationsResponse
-	(*Product)(nil),                        // 8: hipstershop.Product
-	(*ListProductsResponse)(nil),           // 9: hipstershop.ListProductsResponse
-	(*GetProductRequest)(nil),              // 10: hipstershop.GetProductRequest
-	(*SearchProductsRequest)(nil),          // 11: hipstershop.SearchProductsRequest
-	(*SearchProductsResponse)(nil),         // 12: hipstershop.SearchProductsResponse
-	(*GetQuoteRequest)(nil),                // 13: hipstershop.GetQuoteRequest
-	(*GetQuoteResponse)(nil),               // 14: hipstershop.GetQuoteResponse
-	(*ShipOrderRequest)(nil),               // 15: hipstershop.ShipOrderRequest
-	(*ShipOrderResponse)(nil),              // 16: hipstershop.ShipOrderResponse
-	(*Address)(nil),                        // 17: hipstershop.Address
-	(*Money)(nil),                          // 18: hipstershop.Money
-	(*GetSupportedCurrenciesResponse)(nil), // 19: hipstershop.GetSupportedCurrenciesResponse
-	(*CurrencyConversionRequest)(nil),      // 20: hipstershop.CurrencyConversionRequest
-	(*CreditCardInfo)(nil),                 // 21: hipstershop.CreditCardInfo
-	(*ChargeRequest)(nil),                  // 22: hipstershop.ChargeRequest
-	(*ChargeResponse)(nil),                 // 23: hipstershop.ChargeResponse
-	(*OrderItem)(nil),                      // 24: hipstershop.OrderItem
-	(*OrderResult)(nil),                    // 25: hipstershop.OrderResult
-	(*SendOrderConfirmationRequest)(nil),   // 26: hipstershop.SendOrderConfirmationRequest
-	(*PlaceOrderRequest)(nil),              // 27: hipstershop.PlaceOrderRequest
-	(*PlaceOrderResponse)(nil),             // 28: hipstershop.PlaceOrderResponse
-	(*AdRequest)(nil),                      // 29: hipstershop.AdRequest
-	(*AdResponse)(nil),                     // 30: hipstershop.AdResponse
-	(*Ad)(nil),                             // 31: hipstershop.Ad
+	(*CartItem)(nil),                       // 0: genproto.CartItem
+	(*AddItemRequest)(nil),                 // 1: genproto.AddItemRequest
+	(*EmptyCartRequest)(nil),               // 2: genproto.EmptyCartRequest
+	(*GetCartRequest)(nil),                 // 3: genproto.GetCartRequest
+	(*Cart)(nil),                           // 4: genproto.Cart
+	(*Empty)(nil),                          // 5: genproto.Empty
+	(*ListRecommendationsRequest)(nil),     // 6: genproto.ListRecommendationsRequest
+	(*ListRecommendationsResponse)(nil),    // 7: genproto.ListRecommendationsResponse
+	(*Product)(nil),                        // 8: genproto.Product
+	(*ListProductsResponse)(nil),           // 9: genproto.ListProductsResponse
+	(*GetProductRequest)(nil),              // 10: genproto.GetProductRequest
+	(*SearchProductsRequest)(nil),          // 11: genproto.SearchProductsRequest
+	(*SearchProductsResponse)(nil),         // 12: genproto.SearchProductsResponse
+	(*GetQuoteRequest)(nil),                // 13: genproto.GetQuoteRequest
+	(*GetQuoteResponse)(nil),               // 14: genproto.GetQuoteResponse
+	(*ShipOrderRequest)(nil),               // 15: genproto.ShipOrderRequest
+	(*ShipOrderResponse)(nil),              // 16: genproto.ShipOrderResponse
+	(*Address)(nil),                        // 17: genproto.Address
+	(*Money)(nil),                          // 18: genproto.Money
+	(*GetSupportedCurrenciesResponse)(nil), // 19: genproto.GetSupportedCurrenciesResponse
+	(*CurrencyConversionRequest)(nil),      // 20: genproto.CurrencyConversionRequest
+	(*CreditCardInfo)(nil),                 // 21: genproto.CreditCardInfo
+	(*ChargeRequest)(nil),                  // 22: genproto.ChargeRequest
+	(*ChargeResponse)(nil),                 // 23: genproto.ChargeResponse
+	(*OrderItem)(nil),                      // 24: genproto.OrderItem
+	(*OrderResult)(nil),                    // 25: genproto.OrderResult
+	(*SendOrderConfirmationRequest)(nil),   // 26: genproto.SendOrderConfirmationRequest
+	(*PlaceOrderRequest)(nil),              // 27: genproto.PlaceOrderRequest
+	(*PlaceOrderResponse)(nil),             // 28: genproto.PlaceOrderResponse
+	(*AdRequest)(nil),                      // 29: genproto.AdRequest
+	(*AdResponse)(nil),                     // 30: genproto.AdResponse
+	(*Ad)(nil),                             // 31: genproto.Ad
 }
 var file_demo_proto_depIdxs = []int32{
-	0,  // 0: hipstershop.AddItemRequest.item:type_name -> hipstershop.CartItem
-	0,  // 1: hipstershop.Cart.items:type_name -> hipstershop.CartItem
-	18, // 2: hipstershop.Product.price_usd:type_name -> hipstershop.Money
-	8,  // 3: hipstershop.ListProductsResponse.products:type_name -> hipstershop.Product
-	8,  // 4: hipstershop.SearchProductsResponse.results:type_name -> hipstershop.Product
-	17, // 5: hipstershop.GetQuoteRequest.address:type_name -> hipstershop.Address
-	0,  // 6: hipstershop.GetQuoteRequest.items:type_name -> hipstershop.CartItem
-	18, // 7: hipstershop.GetQuoteResponse.cost_usd:type_name -> hipstershop.Money
-	17, // 8: hipstershop.ShipOrderRequest.address:type_name -> hipstershop.Address
-	0,  // 9: hipstershop.ShipOrderRequest.items:type_name -> hipstershop.CartItem
-	18, // 10: hipstershop.CurrencyConversionRequest.from:type_name -> hipstershop.Money
-	18, // 11: hipstershop.ChargeRequest.amount:type_name -> hipstershop.Money
-	21, // 12: hipstershop.ChargeRequest.credit_card:type_name -> hipstershop.CreditCardInfo
-	0,  // 13: hipstershop.OrderItem.item:type_name -> hipstershop.CartItem
-	18, // 14: hipstershop.OrderItem.cost:type_name -> hipstershop.Money
-	18, // 15: hipstershop.OrderResult.shipping_cost:type_name -> hipstershop.Money
-	17, // 16: hipstershop.OrderResult.shipping_address:type_name -> hipstershop.Address
-	24, // 17: hipstershop.OrderResult.items:type_name -> hipstershop.OrderItem
-	25, // 18: hipstershop.SendOrderConfirmationRequest.order:type_name -> hipstershop.OrderResult
-	17, // 19: hipstershop.PlaceOrderRequest.address:type_name -> hipstershop.Address
-	21, // 20: hipstershop.PlaceOrderRequest.credit_card:type_name -> hipstershop.CreditCardInfo
-	25, // 21: hipstershop.PlaceOrderResponse.order:type_name -> hipstershop.OrderResult
-	31, // 22: hipstershop.AdResponse.ads:type_name -> hipstershop.Ad
-	1,  // 23: hipstershop.CartService.AddItem:input_type -> hipstershop.AddItemRequest
-	3,  // 24: hipstershop.CartService.GetCart:input_type -> hipstershop.GetCartRequest
-	2,  // 25: hipstershop.CartService.EmptyCart:input_type -> hipstershop.EmptyCartRequest
-	6,  // 26: hipstershop.RecommendationService.ListRecommendations:input_type -> hipstershop.ListRecommendationsRequest
-	5,  // 27: hipstershop.ProductCatalogService.ListProducts:input_type -> hipstershop.Empty
-	10, // 28: hipstershop.ProductCatalogService.GetProduct:input_type -> hipstershop.GetProductRequest
-	11, // 29: hipstershop.ProductCatalogService.SearchProducts:input_type -> hipstershop.SearchProductsRequest
-	13, // 30: hipstershop.ShippingService.GetQuote:input_type -> hipstershop.GetQuoteRequest
-	15, // 31: hipstershop.ShippingService.ShipOrder:input_type -> hipstershop.ShipOrderRequest
-	5,  // 32: hipstershop.CurrencyService.GetSupportedCurrencies:input_type -> hipstershop.Empty
-	20, // 33: hipstershop.CurrencyService.Convert:input_type -> hipstershop.CurrencyConversionRequest
-	22, // 34: hipstershop.PaymentService.Charge:input_type -> hipstershop.ChargeRequest
-	26, // 35: hipstershop.EmailService.SendOrderConfirmation:input_type -> hipstershop.SendOrderConfirmationRequest
-	27, // 36: hipstershop.CheckoutService.PlaceOrder:input_type -> hipstershop.PlaceOrderRequest
-	29, // 37: hipstershop.AdService.GetAds:input_type -> hipstershop.AdRequest
-	5,  // 38: hipstershop.CartService.AddItem:output_type -> hipstershop.Empty
-	4,  // 39: hipstershop.CartService.GetCart:output_type -> hipstershop.Cart
-	5,  // 40: hipstershop.CartService.EmptyCart:output_type -> hipstershop.Empty
-	7,  // 41: hipstershop.RecommendationService.ListRecommendations:output_type -> hipstershop.ListRecommendationsResponse
-	9,  // 42: hipstershop.ProductCatalogService.ListProducts:output_type -> hipstershop.ListProductsResponse
-	8,  // 43: hipstershop.ProductCatalogService.GetProduct:output_type -> hipstershop.Product
-	12, // 44: hipstershop.ProductCatalogService.SearchProducts:output_type -> hipstershop.SearchProductsResponse
-	14, // 45: hipstershop.ShippingService.GetQuote:output_type -> hipstershop.GetQuoteResponse
-	16, // 46: hipstershop.ShippingService.ShipOrder:output_type -> hipstershop.ShipOrderResponse
-	19, // 47: hipstershop.CurrencyService.GetSupportedCurrencies:output_type -> hipstershop.GetSupportedCurrenciesResponse
-	18, // 48: hipstershop.CurrencyService.Convert:output_type -> hipstershop.Money
-	23, // 49: hipstershop.PaymentService.Charge:output_type -> hipstershop.ChargeResponse
-	5,  // 50: hipstershop.EmailService.SendOrderConfirmation:output_type -> hipstershop.Empty
-	28, // 51: hipstershop.CheckoutService.PlaceOrder:output_type -> hipstershop.PlaceOrderResponse
-	30, // 52: hipstershop.AdService.GetAds:output_type -> hipstershop.AdResponse
+	0,  // 0: genproto.AddItemRequest.item:type_name -> genproto.CartItem
+	0,  // 1: genproto.Cart.items:type_name -> genproto.CartItem
+	18, // 2: genproto.Product.price_usd:type_name -> genproto.Money
+	8,  // 3: genproto.ListProductsResponse.products:type_name -> genproto.Product
+	8,  // 4: genproto.SearchProductsResponse.results:type_name -> genproto.Product
+	17, // 5: genproto.GetQuoteRequest.address:type_name -> genproto.Address
+	0,  // 6: genproto.GetQuoteRequest.items:type_name -> genproto.CartItem
+	18, // 7: genproto.GetQuoteResponse.cost_usd:type_name -> genproto.Money
+	17, // 8: genproto.ShipOrderRequest.address:type_name -> genproto.Address
+	0,  // 9: genproto.ShipOrderRequest.items:type_name -> genproto.CartItem
+	18, // 10: genproto.CurrencyConversionRequest.from:type_name -> genproto.Money
+	18, // 11: genproto.ChargeRequest.amount:type_name -> genproto.Money
+	21, // 12: genproto.ChargeRequest.credit_card:type_name -> genproto.CreditCardInfo
+	0,  // 13: genproto.OrderItem.item:type_name -> genproto.CartItem
+	18, // 14: genproto.OrderItem.cost:type_name -> genproto.Money
+	18, // 15: genproto.OrderResult.shipping_cost:type_name -> genproto.Money
+	17, // 16: genproto.OrderResult.shipping_address:type_name -> genproto.Address
+	24, // 17: genproto.OrderResult.items:type_name -> genproto.OrderItem
+	25, // 18: genproto.SendOrderConfirmationRequest.order:type_name -> genproto.OrderResult
+	17, // 19: genproto.PlaceOrderRequest.address:type_name -> genproto.Address
+	21, // 20: genproto.PlaceOrderRequest.credit_card:type_name -> genproto.CreditCardInfo
+	25, // 21: genproto.PlaceOrderResponse.order:type_name -> genproto.OrderResult
+	31, // 22: genproto.AdResponse.ads:type_name -> genproto.Ad
+	1,  // 23: genproto.CartService.AddItem:input_type -> genproto.AddItemRequest
+	3,  // 24: genproto.CartService.GetCart:input_type -> genproto.GetCartRequest
+	2,  // 25: genproto.CartService.EmptyCart:input_type -> genproto.EmptyCartRequest
+	6,  // 26: genproto.RecommendationService.ListRecommendations:input_type -> genproto.ListRecommendationsRequest
+	5,  // 27: genproto.ProductCatalogService.ListProducts:input_type -> genproto.Empty
+	10, // 28: genproto.ProductCatalogService.GetProduct:input_type -> genproto.GetProductRequest
+	11, // 29: genproto.ProductCatalogService.SearchProducts:input_type -> genproto.SearchProductsRequest
+	13, // 30: genproto.ShippingService.GetQuote:input_type -> genproto.GetQuoteRequest
+	15, // 31: genproto.ShippingService.ShipOrder:input_type -> genproto.ShipOrderRequest
+	5,  // 32: genproto.CurrencyService.GetSupportedCurrencies:input_type -> genproto.Empty
+	20, // 33: genproto.CurrencyService.Convert:input_type -> genproto.CurrencyConversionRequest
+	22, // 34: genproto.PaymentService.Charge:input_type -> genproto.ChargeRequest
+	26, // 35: genproto.EmailService.SendOrderConfirmation:input_type -> genproto.SendOrderConfirmationRequest
+	27, // 36: genproto.CheckoutService.PlaceOrder:input_type -> genproto.PlaceOrderRequest
+	29, // 37: genproto.AdService.GetAds:input_type -> genproto.AdRequest
+	5,  // 38: genproto.CartService.AddItem:output_type -> genproto.Empty
+	4,  // 39: genproto.CartService.GetCart:output_type -> genproto.Cart
+	5,  // 40: genproto.CartService.EmptyCart:output_type -> genproto.Empty
+	7,  // 41: genproto.RecommendationService.ListRecommendations:output_type -> genproto.ListRecommendationsResponse
+	9,  // 42: genproto.ProductCatalogService.ListProducts:output_type -> genproto.ListProductsResponse
+	8,  // 43: genproto.ProductCatalogService.GetProduct:output_type -> genproto.Product
+	12, // 44: genproto.ProductCatalogService.SearchProducts:output_type -> genproto.SearchProductsResponse
+	14, // 45: genproto.ShippingService.GetQuote:output_type -> genproto.GetQuoteResponse
+	16, // 46: genproto.ShippingService.ShipOrder:output_type -> genproto.ShipOrderResponse
+	19, // 47: genproto.CurrencyService.GetSupportedCurrencies:output_type -> genproto.GetSupportedCurrenciesResponse
+	18, // 48: genproto.CurrencyService.Convert:output_type -> genproto.Money
+	23, // 49: genproto.PaymentService.Charge:output_type -> genproto.ChargeResponse
+	5,  // 50: genproto.EmailService.SendOrderConfirmation:output_type -> genproto.Empty
+	28, // 51: genproto.CheckoutService.PlaceOrder:output_type -> genproto.PlaceOrderResponse
+	30, // 52: genproto.AdService.GetAds:output_type -> genproto.AdResponse
 	38, // [38:53] is the sub-list for method output_type
 	23, // [23:38] is the sub-list for method input_type
 	23, // [23:23] is the sub-list for extension type_name

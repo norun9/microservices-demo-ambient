@@ -41,7 +41,7 @@ func NewCurrencyService() (*CurrencyService, error) {
 // GetSupportedCurrencies RPC: サポートされている通貨のリストを返します
 func (c *CurrencyService) GetSupportedCurrencies(ctx context.Context, req *hipstershop.Empty) (*hipstershop.GetSupportedCurrenciesResponse, error) {
 	// 呼び出し元のコンテキストをそのまま使用（親スパンは呼び出し元が生成）
-	ctx, span := c.tracer.Start(ctx, "GetSupportedCurrencies")
+	_, span := c.tracer.Start(ctx, "GetSupportedCurrencies")
 	defer span.End()
 
 	log.Println("Getting supported currencies...")
@@ -101,21 +101,21 @@ func (c *CurrencyService) Convert(ctx context.Context, req *hipstershop.Currency
 // loadCurrencyData は通貨変換データをJSONファイルから読み込みます
 func loadCurrencyData() (map[string]float64, error) {
 	// 初期化時の処理なので、独立したスパンとして生成
-	tracer := otel.Tracer("currencyservice")
-	_, span := tracer.Start(context.Background(), "LoadCurrencyData")
-	defer span.End()
+	// tracer := otel.Tracer("currencyservice")
+	// _, span := tracer.Start(context.Background(), "LoadCurrencyData")
+	// defer span.End()
 
 	dataPath := filepath.Join("data", "currency_conversion.json")
 
 	data, err := os.ReadFile(dataPath)
 	if err != nil {
-		span.SetAttributes(attribute.String("error", err.Error()))
+		// span.SetAttributes(attribute.String("error", err.Error()))
 		return nil, fmt.Errorf("failed to read currency data file: %w", err)
 	}
 
 	var rawData map[string]string
 	if err := json.Unmarshal(data, &rawData); err != nil {
-		span.SetAttributes(attribute.String("error", err.Error()))
+		// span.SetAttributes(attribute.String("error", err.Error()))
 		return nil, fmt.Errorf("failed to parse currency data JSON: %w", err)
 	}
 
@@ -123,16 +123,16 @@ func loadCurrencyData() (map[string]float64, error) {
 	for code, rateStr := range rawData {
 		rate, err := strconv.ParseFloat(rateStr, 64)
 		if err != nil {
-			span.SetAttributes(
-				attribute.String("error.currency", code),
-				attribute.String("error.rate", rateStr),
-			)
+			// span.SetAttributes(
+			// 	attribute.String("error.currency", code),
+			// 	attribute.String("error.rate", rateStr),
+			// )
 			return nil, fmt.Errorf("failed to parse rate for currency %s: %w", code, err)
 		}
 		currencyData[code] = rate
 	}
 
-	span.SetAttributes(attribute.Int("total.currencies", len(currencyData)))
+	// span.SetAttributes(attribute.Int("total.currencies", len(currencyData)))
 
 	return currencyData, nil
 }

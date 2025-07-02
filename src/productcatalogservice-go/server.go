@@ -27,6 +27,9 @@ import (
 	"syscall"
 	"time"
 
+	pb "github.com/norun9/opentelemetry-microservices-demo/src/productcatalogservice-go/genproto/hipstershop"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+
 	"github.com/sirupsen/logrus"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -44,9 +47,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	// Health Service implementation
-	pb "github.com/norun9/opentelemetry-microservices-demo/src/productcatalogservice-go/genproto/hipstershop"
 )
 
 var (
@@ -181,7 +181,7 @@ func run(port string) string {
 	healthSvc := &HealthService{}
 
 	pb.RegisterProductCatalogServiceServer(srv, svc)
-	pb.RegisterHealthServer(srv, healthSvc)
+	healthpb.RegisterHealthServer(srv, healthSvc)
 	go srv.Serve(l)
 	return l.Addr().String()
 }
@@ -308,15 +308,11 @@ func (p *productCatalog) SearchProducts(ctx context.Context, req *pb.SearchProdu
 
 // Health Service implementation
 type HealthService struct {
-	pb.UnimplementedHealthServer
+	healthpb.UnimplementedHealthServer
 }
 
-func (h *HealthService) Check(ctx context.Context, req *pb.HealthCheckRequest) (*pb.HealthCheckResponse, error) {
-	return &pb.HealthCheckResponse{
-		Status: pb.HealthCheckResponse_SERVING,
+func (h *HealthService) Check(ctx context.Context, req *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
+	return &healthpb.HealthCheckResponse{
+		Status: healthpb.HealthCheckResponse_SERVING,
 	}, nil
-}
-
-func (h *HealthService) Watch(req *pb.HealthCheckRequest, srv pb.Health_WatchServer) error {
-	return status.Errorf(codes.Unimplemented, "Watch is not implemented")
 }

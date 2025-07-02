@@ -29,4 +29,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822 // indirect
 )
 
-replace github.com/norun9/microservices-demo-ambient/src/currencyservice-go/genproto/hipstershop => ./genproto/hipstershop
+replace github.com/norun9/microservices-demo-ambient/genproto => ../../genproto

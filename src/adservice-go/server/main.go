@@ -11,7 +11,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/norun9/microservices-demo-ambient/src/adservice-go/genproto/hipstershop"
+	pb "github.com/norun9/microservices-demo-ambient/genproto"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -20,17 +20,15 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/health"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 // adServiceServer は自動生成された AdServiceServer インターフェースを実装します
 type adServiceServer struct {
-	hipstershop.UnimplementedAdServiceServer
+	pb.UnimplementedAdServiceServer
 }
 
 // adsMap: カテゴリごとに広告を保持する
-var adsMap = map[string][]*hipstershop.Ad{
+var adsMap = map[string][]*pb.Ad{
 	"clothing":    {{RedirectUrl: "/product/66VCHSJNUP", Text: "Tank top for sale. 20% off."}},
 	"accessories": {{RedirectUrl: "/product/1YMWWN1N4O", Text: "Watch for sale. Buy one, get second one for free"}},
 	"footwear":    {{RedirectUrl: "/product/L9ECAV7KIM", Text: "Loafers for sale. Buy one, get second one for free"}},
@@ -43,10 +41,10 @@ var adsMap = map[string][]*hipstershop.Ad{
 }
 
 // GetAds implements AdService.GetAds
-func (s *adServiceServer) GetAds(ctx context.Context, req *hipstershop.AdRequest) (*hipstershop.AdResponse, error) {
+func (s *adServiceServer) GetAds(ctx context.Context, req *pb.AdRequest) (*pb.AdResponse, error) {
 	log.Printf("received GetAds request: context_keys=%v", req.ContextKeys)
 
-	var allAds []*hipstershop.Ad
+	var allAds []*pb.Ad
 	for _, key := range req.ContextKeys {
 		if ads, ok := adsMap[key]; ok {
 			allAds = append(allAds, ads...)
@@ -56,25 +54,35 @@ func (s *adServiceServer) GetAds(ctx context.Context, req *hipstershop.AdRequest
 		allAds = getRandomAds()
 	}
 
-	resp := &hipstershop.AdResponse{
+	resp := &pb.AdResponse{
 		Ads: allAds,
 	}
 	return resp, nil
 }
 
 // getRandomAds: ランダムに広告を2件選んで返す
-func getRandomAds() []*hipstershop.Ad {
-	var all []*hipstershop.Ad
+func getRandomAds() []*pb.Ad {
+	var all []*pb.Ad
 	for _, ads := range adsMap {
 		all = append(all, ads...)
 	}
 	rand.Seed(time.Now().UnixNano())
-	res := []*hipstershop.Ad{}
+	res := []*pb.Ad{}
 	for i := 0; i < 2; i++ {
 		idx := rand.Intn(len(all))
 		res = append(res, all[idx])
 	}
 	return res
+}
+
+type HealthService struct {
+	pb.UnimplementedHealthServer
+}
+
+func (h *HealthService) Check(ctx context.Context, req *pb.HealthCheckRequest) (*pb.HealthCheckResponse, error) {
+	return &pb.HealthCheckResponse{
+		Status: pb.HealthCheckResponse_SERVING,
+	}, nil
 }
 
 func main() {
@@ -101,19 +109,17 @@ func main() {
 		log.Fatalf("failed to listen on %s: %v", addr, err)
 	}
 
-	// gRPC サーバーに OpenTelemetry の Unary/Stream インターセプターを追加
+	// gRPC サーバーに OpenTelemetry の StatsHandler を追加
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
-		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
 
 	// 3) AdService サーバーを登録
-	hipstershop.RegisterAdServiceServer(grpcServer, &adServiceServer{})
+	pb.RegisterAdServiceServer(grpcServer, &adServiceServer{})
 
 	// 4) health チェックサービスを登録
-	healthServer := health.NewServer()
-	healthpb.RegisterHealthServer(grpcServer, healthServer)
-	healthServer.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
+	healthSvc := &HealthService{}
+	pb.RegisterHealthServer(grpcServer, healthSvc)
 
 	log.Printf("AdService gRPC server started, listening on %s", addr)
 	if err := grpcServer.Serve(listener); err != nil {

@@ -18,11 +18,6 @@ COPY . .
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest \
  && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
-# protobuf ファイルから Go コードを生成
-RUN protoc --go_out=. --go_opt=paths=source_relative \
-    --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-    proto/demo.proto
-
 # アプリケーションをビルド
 RUN CGO_ENABLED=0 GOOS=linux go build -o currencyservice .
 

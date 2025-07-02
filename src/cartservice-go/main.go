@@ -12,8 +12,8 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/norun9/microservices-demo-ambient/genproto/hipstershop"
 	"github.com/norun9/microservices-demo-ambient/src/cartservice-go/cartstore"
-	"github.com/norun9/microservices-demo-ambient/src/cartservice-go/genproto/hipstershop"
 	"github.com/norun9/microservices-demo-ambient/src/cartservice-go/services"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -24,8 +24,8 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 
+	healthpb "github.com/norun9/microservices-demo-ambient/genproto/hipstershop/grpc/health/v1"
 	"google.golang.org/grpc"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 func main() {

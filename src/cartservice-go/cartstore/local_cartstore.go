@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/norun9/microservices-demo-ambient/src/cartservice-go/genproto/hipstershop"
+	"github.com/norun9/microservices-demo-ambient/genproto/hipstershop"
 )
 
 // LocalCartStore は、メモリ上にカートを保持する簡易版ストレージです。

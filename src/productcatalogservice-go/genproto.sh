@@ -24,10 +24,10 @@ go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
 protoc --go-grpc_out=. --go_out=. -I $protodir $protodir/demo.proto
 
-# Generate health service protobuf
-cd proto
+# Generate health service protobuf from pb/grpc/health/v1/health.proto
 protoc \
-  --proto_path=. \
-  --go_out=../genproto/hipstershop       --go_opt=paths=source_relative \
-  --go-grpc_out=../genproto/hipstershop  --go-grpc_opt=paths=source_relative \
-  health.proto
+  --proto_path=$protodir \
+  --go_out=genproto/hipstershop       --go_opt=paths=source_relative \
+  --go-grpc_out=genproto/hipstershop  --go-grpc_opt=paths=source_relative \
+  $protodir/grpc/health/v1/health.proto
+

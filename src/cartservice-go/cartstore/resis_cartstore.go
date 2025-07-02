@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/norun9/microservices-demo-ambient/src/cartservice-go/genproto/hipstershop"
+	"github.com/norun9/microservices-demo-ambient/genproto/hipstershop"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"

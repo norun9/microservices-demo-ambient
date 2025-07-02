@@ -5,7 +5,7 @@ package cartstore
 import (
 	"context"
 
-	"github.com/norun9/microservices-demo-ambient/src/cartservice-go/genproto/hipstershop"
+	"github.com/norun9/microservices-demo-ambient/genproto/hipstershop"
 )
 
 // ICartStore はカートストレージへの操作を定義するインターフェースです
