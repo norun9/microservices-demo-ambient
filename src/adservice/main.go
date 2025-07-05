@@ -13,11 +13,8 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
@@ -26,8 +23,6 @@ import (
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
-
-var meter metric.Meter
 
 // adServiceServer implements the AdServiceServer interface.
 type adServiceServer struct {
@@ -50,7 +45,7 @@ var adsMap = map[string][]*pb.Ad{
 
 // GetAds implements AdService.GetAds.
 func (s *adServiceServer) GetAds(ctx context.Context, req *pb.AdRequest) (*pb.AdResponse, error) {
-	ctx, span := s.tracer.Start(ctx, "GetAds")
+	_, span := s.tracer.Start(ctx, "GetAds")
 	defer span.End()
 
 	log.Printf("received GetAds request: context_keys=%v", req.ContextKeys)
@@ -99,17 +94,6 @@ func main() {
 	defer func() {
 		if err := tp.Shutdown(context.Background()); err != nil {
 			log.Printf("Error shutting down tracer provider: %v", err)
-		}
-	}()
-
-	// 2) Initialize OpenTelemetry MeterProvider.
-	mp, err := initMeterProvider(ctx)
-	if err != nil {
-		log.Fatalf("failed to initialize meter provider: %v", err)
-	}
-	defer func() {
-		if err := mp.Shutdown(context.Background()); err != nil {
-			log.Printf("Error shutting down meter provider: %v", err)
 		}
 	}()
 
@@ -186,49 +170,4 @@ func initTracerProvider(ctx context.Context) (*sdktrace.TracerProvider, error) {
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
 	return tp, nil
-}
-
-// initMeterProvider initializes an OpenTelemetry MeterProvider and sets up the OTLP exporter.
-// The Collector endpoint is specified via the OTEL_EXPORTER_OTLP_ENDPOINT environment variable.
-func initMeterProvider(ctx context.Context) (*sdkmetric.MeterProvider, error) {
-	// 1) Configure OTLP gRPC exporter for metrics.
-	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-	if endpoint == "" {
-		endpoint = "dns:///otel-collector.observability.svc.cluster.local:4317"
-	}
-
-	metricExporter, err := otlpmetricgrpc.New(ctx,
-		otlpmetricgrpc.WithEndpoint(endpoint),
-		otlpmetricgrpc.WithInsecure(),                   // Use WithInsecure for plain-text communication
-		otlpmetricgrpc.WithDialOption(grpc.WithBlock()), // Block until connection is established
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create OTLP metric exporter: %w", err)
-	}
-
-	// 2) Set up resource information (service name, version, etc.).
-	res, err := resource.New(ctx,
-		resource.WithAttributes(
-			semconv.ServiceNameKey.String("adservice"), // サービス名を��定
-			semconv.ServiceVersionKey.String("v1.0.0"),
-		),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create resource: %w", err)
-	}
-
-	// 3) Build MeterProvider.
-	// PeriodicReader is used to push metrics at a regular interval.
-	meterProvider := sdkmetric.NewMeterProvider(
-		sdkmetric.WithResource(res),
-		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(metricExporter, sdkmetric.WithInterval(10*time.Second))), // 10秒ごとにエクスポート
-	)
-
-	// 4) Set the global MeterProvider.
-	otel.SetMeterProvider(meterProvider)
-
-	// Initialize the meter
-	meter = otel.Meter("adservice") // メーターの名前を設定
-
-	return meterProvider, nil
 }

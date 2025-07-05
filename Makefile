@@ -11,6 +11,7 @@ HELM := helm
 KUBECTL := kubectl
 KIND := kind
 MAKE := make
+ROLL ?= false
 
 # Cluster configuration
 CLUSTER_NAME := demo
@@ -106,9 +107,9 @@ helm-install:
 # 12. Install Istio addons (Prometheus, Grafana, Jaeger)
 addons-install:
 	@echo "[12/23] Installing Istio addons..."
-	@$(KUBECTL) apply -f https://raw.githubusercontent.com/istio/istio/release-1.25/samples/addons/prometheus.yaml
-	@$(KUBECTL) apply -f https://raw.githubusercontent.com/istio/istio/release-1.25/samples/addons/grafana.yaml
-	@$(KUBECTL) apply -f https://raw.githubusercontent.com/istio/istio/release-1.25/samples/addons/jaeger.yaml
+	@$(KUBECTL) apply -f https://raw.githubusercontent.com/istio/istio/release-1.26/samples/addons/prometheus.yaml
+	@$(KUBECTL) apply -f https://raw.githubusercontent.com/istio/istio/release-1.26/samples/addons/grafana.yaml
+	@$(KUBECTL) apply -f https://raw.githubusercontent.com/istio/istio/release-1.26/samples/addons/jaeger.yaml
 
 # 13. Install Kiali
 kiali-install:
@@ -139,11 +140,11 @@ istio-base:
 	@echo "[15/23] Installing or upgrading Istio core components..."
 	@$(HELM) upgrade --install istio-base istio/base \
 		--namespace istio-system \
-		--version 1.24.0 \
+		--version 1.26.0 \
 		--wait
 	@$(HELM) upgrade --install istiod istio/istiod \
 		--namespace istio-system \
-		--version 1.24.0 \
+		--version 1.26.0 \
 		--set profile=ambient \
 		--set pilot.env.ENABLE_CA_SERVER=false \
 		--set global.caAddress=cert-manager-istio-csr.cert-manager.svc:443 \
@@ -152,12 +153,12 @@ istio-base:
 		--wait
 	@$(HELM) upgrade --install istio-cni istio/cni \
 		--namespace istio-system \
-		--version 1.24.0 \
+		--version 1.26.0 \
 		--set profile=ambient \
 		--wait
 	@$(HELM) upgrade --install ztunnel istio/ztunnel \
 		--namespace istio-system \
-		--version=1.24.0 \
+		--version=1.26.0 \
 		--set "caAddress=cert-manager-istio-csr.cert-manager.svc:443" \
 		--wait
 
@@ -166,6 +167,10 @@ apply-otel-telemetry:
 	@echo "[16/23] Applying OTel Collector and Telemetry manifests..."
 	@$(KUBECTL) apply -f ./release/otel-collector.yaml
 	@$(KUBECTL) apply -f ./release/als-telemetry.yaml
+	@if [ "$(ROLL)" = "true" ]; then \
+		echo "[20/23] Restarting deployments in 'observability' namespace..."; \
+		$(KUBECTL) rollout restart deployment -n observability; \
+	fi
 
 # 17. Create demo-app namespace
 create-demo-app:
@@ -223,8 +228,6 @@ build-local-image: build-images build-loadgenerator clean-builder-cache
 	  echo "   • $$svc:local → kind load"; \
 	  $(KIND) load docker-image $$svc:local --name $(CLUSTER_NAME); \
 	done
-
-ROLL ?= false
 
 # 20. Deploy application manifests
 deploy-app: create-demo-app build-local-image

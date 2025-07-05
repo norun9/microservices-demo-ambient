@@ -20,6 +20,41 @@ data:
             endpoint: 0.0.0.0:4317
           http:
             endpoint: 0.0.0.0:4318
+      prometheus:
+        config:
+          scrape_configs:
+            # - job_name: 'istio-prometheus'
+            #   static_configs:
+            #     - targets:
+            #         - 'prometheus.istio-system.svc.cluster.local:9090'
+            - job_name: 'kubernetes-pods-annotated'
+              kubernetes_sd_configs:
+                - role: pod
+              relabel_configs:
+                # ← ここで namespace=demo-app だけ残す
+                - source_labels: [__meta_kubernetes_namespace]
+                  action: keep
+                  regex: demo-app
+                # Prometheus アノテーション promethus.io/scrape: "true" がついた Pod のみを対象にする
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                  action: keep
+                  regex: 
+                - source_labels: [__address__]
+                  regex: ^$
+                  action: drop
+                # アノテーションで指定したパスを metrics_path に設定
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+                  action: replace
+                  target_label: __metrics_path__
+                  regex: (.+)
+                # アノテーションで指定したポートに書き換える
+                - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+                  regex: (.+):(?:\d+);(\d+)
+                  replacement: $1:$2
+                  target_label: __address__
+                - source_labels: [__address__]
+                  regex: ^$
+                  action: drop
     processors:
       batch:
         timeout: 1s
@@ -59,15 +94,15 @@ data:
         traces:
           receivers: [otlp]
           processors: [batch]
-          exporters: [file/traces,jaeger]
+          exporters: [file/traces, jaeger]
         metrics:
-          receivers: [otlp]
+          receivers: [prometheus]
           processors: [batch]
-          exporters: [file/metrics]
+          exporters: [file/metrics, logging]
         logs:
           receivers: [otlp]
           processors: [batch]
-          exporters: [file/logs,logging]
+          exporters: [file/logs]
 ---
 apiVersion: v1
 kind: Service
@@ -162,3 +197,32 @@ spec:
             items:
               - key: otel-collector-config.yaml
                 path: otel-collector-config.yaml
+---
+# RBAC: Collector がクラスタ内をスクレイプするための権限
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otel-collector-metrics-reader
+rules:
+  - apiGroups: [""]
+    resources: ["nodes/metrics", "nodes/proxy", "nodes", "services", "endpoints", "pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["extensions"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector-metrics-reader-binding
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: observability
+roleRef:
+  kind: ClusterRole
+  name: otel-collector-metrics-reader
+  apiGroup: rbac.authorization.k8s.io

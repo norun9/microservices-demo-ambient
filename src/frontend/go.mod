@@ -34,9 +34,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822 // indirect
 )
 
-require (
-	cloud.google.com/go/compute/metadata v0.6.0
-	go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.29.0
-)
+require go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.29.0
 
 replace github.com/norun9/microservices-demo-ambient/genproto => ../../genproto
