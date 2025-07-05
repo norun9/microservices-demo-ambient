@@ -30,8 +30,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	pb "github.com/GoogleCloudPlatform/microservices-demo/src/frontend/genproto/hipstershop"
-	"github.com/GoogleCloudPlatform/microservices-demo/src/frontend/money"
+	pb "github.com/norun9/microservices-demo-ambient/genproto"
+	"github.com/norun9/microservices-demo-ambient/src/frontend/money"
 )
 
 type platformDetails struct {
@@ -429,7 +429,7 @@ func (fe *frontendServer) setCurrencyHandler(w http.ResponseWriter, r *http.Requ
 func (fe *frontendServer) chooseAd(ctx context.Context, ctxKeys []string, log logrus.FieldLogger) *pb.Ad {
 	ads, err := fe.getAd(ctx, ctxKeys)
 	if err != nil {
-		// ここでエラーが出る
+		// This error occurs here.
 		log.WithField("error", err).Warn("failed to retrieve ads")
 		return nil
 	}

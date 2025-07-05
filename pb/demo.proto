@@ -14,9 +14,9 @@
 
 syntax = "proto3";
 
-package hipstershop;
+package genproto;
 
-option go_package = "genproto/hipstershop";
+option go_package = "github.com/norun9/microservices-demo-ambient/genproto";
 
 // -----------------Cart service-----------------
 

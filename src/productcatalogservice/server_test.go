@@ -18,8 +18,8 @@ import (
 	"context"
 	"testing"
 
-	pb "github.com/GoogleCloudPlatform/microservices-demo/src/productcatalogservice/genproto/hipstershop"
 	"github.com/google/go-cmp/cmp"
+	pb "github.com/norun9/microservices-demo-ambient/genproto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -30,7 +30,7 @@ import (
 func TestServer(t *testing.T) {
 	ctx := context.Background()
 	addr := run(port)
-	conn, err := grpc.DialContext(ctx, addr,
+	conn, err := grpc.NewClient(addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatal(err)

@@ -2,6 +2,8 @@ meshConfig:
   accessLogFile: /dev/stdout
   accessLogEncoding: JSON
   enableTracing: true
+  # https://istio.io/latest/docs/ops/integrations/prometheus/#option-1-metrics-merging
+  enablePrometheusMerge: true
   # ────────────────────────────────────────────────────
   # turn on the new (v2) tracing configuration schema
   defaultConfig:

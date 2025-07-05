@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -28,11 +27,12 @@ import (
 
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
 
 const (
@@ -83,16 +83,40 @@ type frontendServer struct {
 func InitTracerProvider() *sdktrace.TracerProvider {
 	ctx := context.Background()
 
-	exporter, err := otlptracegrpc.New(ctx)
+	// 1) Configure OTLP gRPC exporter.
+	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if endpoint == "" {
+		endpoint = "dns:///otel-collector.observability.svc.cluster.local:4317"
+	}
+	exporter, err := otlptracegrpc.New(ctx,
+		otlptracegrpc.WithEndpoint(endpoint),
+		otlptracegrpc.WithInsecure(),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// 2) Set up resource information (service name, version, etc.).
+	res, err := resource.New(ctx,
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String("frontend"),
+			semconv.ServiceVersionKey.String("v1.0.0"),
+		),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 3) Build TracerProvider.
+	bsp := sdktrace.NewBatchSpanProcessor(exporter)
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),
-		sdktrace.WithBatcher(exporter),
+		sdktrace.WithSampler(sdktrace.AlwaysSample()), // Consider TraceIDRatioBased for production.
+		sdktrace.WithResource(res),
+		sdktrace.WithSpanProcessor(bsp),
 	)
 	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+	// 4) Configure to use W3C Trace Context.
+	otel.SetTextMapPropagator(propagation.TraceContext{})
 	return tp
 }
 
@@ -103,8 +127,6 @@ func main() {
 			log.Printf("Error shutting down tracer provider: %v", err)
 		}
 	}()
-
-	ctx := context.Background()
 
 	srvPort := port
 	if os.Getenv("PORT") != "" {
@@ -120,13 +142,13 @@ func main() {
 	mustMapEnv(&svc.shippingSvcAddr, "SHIPPING_SERVICE_ADDR")
 	mustMapEnv(&svc.adSvcAddr, "AD_SERVICE_ADDR")
 
-	mustConnGRPC(ctx, &svc.currencySvcConn, svc.currencySvcAddr)
-	mustConnGRPC(ctx, &svc.productCatalogSvcConn, svc.productCatalogSvcAddr)
-	mustConnGRPC(ctx, &svc.cartSvcConn, svc.cartSvcAddr)
-	mustConnGRPC(ctx, &svc.recommendationSvcConn, svc.recommendationSvcAddr)
-	mustConnGRPC(ctx, &svc.shippingSvcConn, svc.shippingSvcAddr)
-	mustConnGRPC(ctx, &svc.checkoutSvcConn, svc.checkoutSvcAddr)
-	mustConnGRPC(ctx, &svc.adSvcConn, svc.adSvcAddr)
+	mustConnGRPC(&svc.currencySvcConn, svc.currencySvcAddr)
+	mustConnGRPC(&svc.productCatalogSvcConn, svc.productCatalogSvcAddr)
+	mustConnGRPC(&svc.cartSvcConn, svc.cartSvcAddr)
+	mustConnGRPC(&svc.recommendationSvcConn, svc.recommendationSvcAddr)
+	mustConnGRPC(&svc.shippingSvcConn, svc.shippingSvcAddr)
+	mustConnGRPC(&svc.checkoutSvcConn, svc.checkoutSvcAddr)
+	mustConnGRPC(&svc.adSvcConn, svc.adSvcAddr)
 
 	r := mux.NewRouter()
 	r.Use(otelmux.Middleware("server"))
@@ -146,7 +168,7 @@ func main() {
 	handler = &logHandler{log: log, next: handler} // add logging
 	handler = ensureSessionID(handler)             // add session ID
 
-	log.Infof("starting server on " + addr + ":" + srvPort)
+	log.Infof("starting server on %s:%s", addr, srvPort)
 	log.Fatal(http.ListenAndServe(addr+":"+srvPort, handler))
 }
 
@@ -158,14 +180,11 @@ func mustMapEnv(target *string, envKey string) {
 	*target = v
 }
 
-func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string) {
+func mustConnGRPC(conn **grpc.ClientConn, addr string) {
 	var err error
-	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
-	defer cancel()
-	*conn, err = grpc.DialContext(ctx, addr,
+	*conn, err = grpc.NewClient(addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	)
 	if err != nil {
 		panic(errors.Wrapf(err, "grpc: failed to connect %s", addr))

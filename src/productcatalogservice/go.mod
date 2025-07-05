@@ -1,36 +1,35 @@
-module github.com/GoogleCloudPlatform/microservices-demo/src/productcatalogservice
+module github.com/norun9/opentelemetry-microservices-demo/src/productcatalogservice
 
-go 1.17
+go 1.24.1
 
 require (
-	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/go-cmp v0.5.7
-	github.com/sirupsen/logrus v1.8.1
-	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
-	google.golang.org/grpc v1.44.0
+	github.com/google/go-cmp v0.7.0
+	github.com/norun9/microservices-demo-ambient/genproto v0.0.0-00010101000000-000000000000
+	github.com/sirupsen/logrus v1.9.3
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.62.0
+	go.opentelemetry.io/otel v1.37.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.37.0
+	go.opentelemetry.io/otel/sdk v1.37.0
+	go.opentelemetry.io/otel/trace v1.37.0
+	google.golang.org/grpc v1.73.0
+	google.golang.org/protobuf v1.36.6
 )
 
 require (
-	go.opentelemetry.io/otel/sdk v1.4.1
-	google.golang.org/protobuf v1.27.1
-)
-
-require (
-	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
-	github.com/go-logr/logr v1.2.2 // indirect
+	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
+	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.4.1 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.4.1 // indirect
-	go.opentelemetry.io/otel/trace v1.4.1 // indirect
-	go.opentelemetry.io/proto/otlp v0.12.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.1 // indirect
+	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.37.0 // indirect
+	go.opentelemetry.io/otel/metric v1.37.0 // indirect
+	go.opentelemetry.io/proto/otlp v1.7.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250603155806-513f23925822 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822 // indirect
 )
 
-require (
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.29.0
-	go.opentelemetry.io/otel v1.4.1
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.4.1
-	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
-	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20220126215142-9970aeb2e350 // indirect
-)
+replace github.com/norun9/microservices-demo-ambient/genproto => ../../genproto

@@ -35,7 +35,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: emailservice-go:local
+        image: emailservice:local
         ports:
         - containerPort: 8080
         env:
@@ -94,7 +94,7 @@ spec:
       serviceAccountName: default
       containers:
         - name: server
-          image: gcr.io/google-samples/microservices-demo/checkoutservice:v0.3.6
+          image: checkoutservice:local
           ports:
           - containerPort: 5050
           readinessProbe:
@@ -104,6 +104,8 @@ spec:
             exec:
               command: ["/bin/grpc_health_probe", "-addr=:5050"]
           env:
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "dns:///otel-collector.observability.svc.cluster.local:4317"
           - name: PORT
             value: "5050"
           - name: PRODUCT_CATALOG_SERVICE_ADDR
@@ -166,7 +168,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: recommendationservice-go:local
+        image: recommendationservice:local
         ports:
         - containerPort: 8080
         readinessProbe:
@@ -231,7 +233,7 @@ spec:
       serviceAccountName: default
       containers:
         - name: server
-          image: gcr.io/google-samples/microservices-demo/frontend:v0.3.6
+          image: frontend:local
           ports:
           - containerPort: 8080
           readinessProbe:
@@ -253,6 +255,8 @@ spec:
           env:
           - name: PORT
             value: "8080"
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "dns:///otel-collector.observability.svc.cluster.local:4317"
           - name: PRODUCT_CATALOG_SERVICE_ADDR
             value: "productcatalogservice:3550"
           - name: CURRENCY_SERVICE_ADDR
@@ -332,7 +336,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: paymentservice-go:local
+        image: paymentservice:local
         ports:
         - containerPort: 50051
         env:
@@ -388,20 +392,24 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/google-samples/microservices-demo/productcatalogservice:v0.3.6
+        image: productcatalogservice:local
         ports:
         - containerPort: 3550
         env:
         - name: PORT
           value: "3550"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "dns:///otel-collector.observability.svc.cluster.local:4317"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "service.name=productcatalogservice,service.version=1.0.0"
         - name: DISABLE_STATS
           value: "0"
         - name: DISABLE_TRACING
           value: "0"
         - name: DISABLE_PROFILER
           value: "0"
-        # - name: JAEGER_SERVICE_ADDR
-        #   value: "jaeger-collector:14268"
+        - name: JAEGER_SERVICE_ADDR
+          value: "jaeger-collector:14268"
         readinessProbe:
           exec:
             command: ["/bin/grpc_health_probe", "-addr=:3550"]
@@ -448,12 +456,14 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: cartservice-go:local
+        image: cartservice:local
         ports:
         - containerPort: 7070
         env:
         - name: REDIS_ADDR
           value: "redis-cart.demo-app.svc.cluster.local:6379"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "dns:///otel-collector.observability.svc.cluster.local:4317"
         resources:
           requests:
             cpu: 200m
@@ -530,6 +540,8 @@ spec:
           value: "frontend:80"
         - name: USERS
           value: "10"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "dns:///otel-collector.observability.svc.cluster.local:4317"
         resources:
           requests:
             cpu: 300m
@@ -557,13 +569,15 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: currencyservice-go:local
+        image: currencyservice:local
         ports:
         - name: grpc
           containerPort: 7000
         env:
         - name: PORT
           value: "7000"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "dns:///otel-collector.observability.svc.cluster.local:4317"
         - name: DISABLE_STATS
           value: "0"
         - name: DISABLE_TRACING
@@ -615,20 +629,22 @@ spec:
       serviceAccountName: default
       containers:
       - name: server
-        image: gcr.io/google-samples/microservices-demo/shippingservice:v0.3.6
+        image: shippingservice:local
         ports:
         - containerPort: 50051
         env:
         - name: PORT
           value: "50051"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "dns:///otel-collector.observability.svc.cluster.local:4317"
         - name: DISABLE_STATS
           value: "0"
         - name: DISABLE_TRACING
           value: "0"
         - name: DISABLE_PROFILER
           value: "0"
-        # - name: JAEGER_SERVICE_ADDR
-        #   value: "jaeger-collector:14268"
+        - name: JAEGER_SERVICE_ADDR
+          value: "jaeger-collector:14268"
         readinessProbe:
           periodSeconds: 5
           exec:
@@ -738,7 +754,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
         - name: server
-          image: adservice-go:local
+          image: adservice:local
           ports:
             - containerPort: 9555
           env:
@@ -749,7 +765,7 @@ spec:
             - name: DISABLE_TRACING
               value: "0"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "dsn:///otel-collector.observability.svc.cluster.local:4317"
+              value: "dns:///otel-collector.observability.svc.cluster.local:4317"
             - name: OTEL_SERVICE_NAME
               value: "adservice"
             - name: OTEL_SERVICE_VERSION

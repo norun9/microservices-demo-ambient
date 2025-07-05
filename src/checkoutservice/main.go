@@ -26,17 +26,21 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"go.opentelemetry.io/otel/trace"
 
-	pb "github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/genproto/hipstershop"
-	money "github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	pb "github.com/norun9/microservices-demo-ambient/genproto"
+	money "github.com/norun9/microservices-demo-ambient/src/checkoutservice/money"
 )
 
 const (
@@ -63,16 +67,41 @@ func init() {
 func InitTracerProvider() *sdktrace.TracerProvider {
 	ctx := context.Background()
 
-	exporter, err := otlptracegrpc.New(ctx)
+	// 1) Configure OTLP gRPC exporter.
+	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if endpoint == "" {
+		endpoint = "dns:///otel-collector.observability.svc.cluster.local:4317"
+	}
+	exporter, err := otlptracegrpc.New(ctx,
+		otlptracegrpc.WithEndpoint(endpoint),
+		otlptracegrpc.WithInsecure(),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// 2) Set up resource information (service name, version, etc.).
+	res, err := resource.New(ctx,
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String("checkoutservice"),
+			semconv.ServiceVersionKey.String("v1.0.0"),
+		),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 3) Build TracerProvider.
+	bsp := sdktrace.NewBatchSpanProcessor(exporter)
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),
-		sdktrace.WithBatcher(exporter),
+		sdktrace.WithSampler(sdktrace.AlwaysSample()), // Consider TraceIDRatioBased for production.
+		sdktrace.WithResource(res),
+		sdktrace.WithSpanProcessor(bsp),
 	)
 	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+
+	// 4) Configure to use W3C Trace Context.
+	otel.SetTextMapPropagator(propagation.TraceContext{})
 	return tp
 }
 
@@ -83,6 +112,7 @@ type checkoutService struct {
 	shippingSvcAddr       string
 	emailSvcAddr          string
 	paymentSvcAddr        string
+	tracer                trace.Tracer
 	pb.UnimplementedCheckoutServiceServer
 }
 
@@ -106,6 +136,7 @@ func main() {
 	mustMapEnv(&svc.currencySvcAddr, "CURRENCY_SERVICE_ADDR")
 	mustMapEnv(&svc.emailSvcAddr, "EMAIL_SERVICE_ADDR")
 	mustMapEnv(&svc.paymentSvcAddr, "PAYMENT_SERVICE_ADDR")
+	svc.tracer = otel.Tracer("checkoutservice")
 
 	log.Infof("service config: %+v", svc)
 
@@ -115,11 +146,12 @@ func main() {
 	}
 
 	var srv *grpc.Server = grpc.NewServer(
-		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
-		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
 	pb.RegisterCheckoutServiceServer(srv, svc)
-	healthpb.RegisterHealthServer(srv, svc)
+	healthSvc := health.NewServer()
+	grpc_health_v1.RegisterHealthServer(srv, healthSvc)
+	healthSvc.SetServingStatus("checkoutservice", grpc_health_v1.HealthCheckResponse_SERVING)
 	log.Infof("starting to listen on tcp: %q", lis.Addr().String())
 	err = srv.Serve(lis)
 	log.Fatal(err)
@@ -133,15 +165,10 @@ func mustMapEnv(target *string, envKey string) {
 	*target = v
 }
 
-func (cs *checkoutService) Check(ctx context.Context, req *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
-	return &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING}, nil
-}
-
-func (cs *checkoutService) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_WatchServer) error {
-	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
-}
-
 func (cs *checkoutService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (*pb.PlaceOrderResponse, error) {
+	ctx, span := cs.tracer.Start(ctx, "PlaceOrder")
+	defer span.End()
+
 	log.Infof("[PlaceOrder] user_id=%q user_currency=%q", req.UserId, req.UserCurrency)
 
 	orderID, err := uuid.NewUUID()
@@ -151,7 +178,7 @@ func (cs *checkoutService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderReq
 
 	prep, err := cs.prepareOrderItemsAndShippingQuoteFromCart(ctx, req.UserId, req.UserCurrency, req.Address)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	total := &pb.Money{CurrencyCode: req.UserCurrency,
@@ -224,16 +251,15 @@ func (cs *checkoutService) prepareOrderItemsAndShippingQuoteFromCart(ctx context
 	return out, nil
 }
 
-func createClient(ctx context.Context, svcAddr string) (*grpc.ClientConn, error) {
-	return grpc.DialContext(ctx, svcAddr,
+func createClient(svcAddr string) (*grpc.ClientConn, error) {
+	return grpc.NewClient(svcAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	)
 }
 
 func (cs *checkoutService) quoteShipping(ctx context.Context, address *pb.Address, items []*pb.CartItem) (*pb.Money, error) {
-	conn, err := createClient(ctx, cs.shippingSvcAddr)
+	conn, err := createClient(cs.shippingSvcAddr)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect shipping service: %+v", err)
 	}
@@ -250,7 +276,7 @@ func (cs *checkoutService) quoteShipping(ctx context.Context, address *pb.Addres
 }
 
 func (cs *checkoutService) getUserCart(ctx context.Context, userID string) ([]*pb.CartItem, error) {
-	conn, err := createClient(ctx, cs.cartSvcAddr)
+	conn, err := createClient(cs.cartSvcAddr)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect cart service: %+v", err)
 	}
@@ -264,7 +290,7 @@ func (cs *checkoutService) getUserCart(ctx context.Context, userID string) ([]*p
 }
 
 func (cs *checkoutService) emptyUserCart(ctx context.Context, userID string) error {
-	conn, err := createClient(ctx, cs.cartSvcAddr)
+	conn, err := createClient(cs.cartSvcAddr)
 	if err != nil {
 		return fmt.Errorf("could not connect cart service: %+v", err)
 	}
@@ -279,7 +305,7 @@ func (cs *checkoutService) emptyUserCart(ctx context.Context, userID string) err
 func (cs *checkoutService) prepOrderItems(ctx context.Context, items []*pb.CartItem, userCurrency string) ([]*pb.OrderItem, error) {
 	out := make([]*pb.OrderItem, len(items))
 
-	conn, err := createClient(ctx, cs.productCatalogSvcAddr)
+	conn, err := createClient(cs.productCatalogSvcAddr)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect product catalog service: %+v", err)
 	}
@@ -303,7 +329,7 @@ func (cs *checkoutService) prepOrderItems(ctx context.Context, items []*pb.CartI
 }
 
 func (cs *checkoutService) convertCurrency(ctx context.Context, from *pb.Money, toCurrency string) (*pb.Money, error) {
-	conn, err := createClient(ctx, cs.currencySvcAddr)
+	conn, err := createClient(cs.currencySvcAddr)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect currency service: %+v", err)
 	}
@@ -318,7 +344,7 @@ func (cs *checkoutService) convertCurrency(ctx context.Context, from *pb.Money, 
 }
 
 func (cs *checkoutService) chargeCard(ctx context.Context, amount *pb.Money, paymentInfo *pb.CreditCardInfo) (string, error) {
-	conn, err := createClient(ctx, cs.paymentSvcAddr)
+	conn, err := createClient(cs.paymentSvcAddr)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect payment service: %+v", err)
 	}
@@ -334,7 +360,7 @@ func (cs *checkoutService) chargeCard(ctx context.Context, amount *pb.Money, pay
 }
 
 func (cs *checkoutService) sendOrderConfirmation(ctx context.Context, email string, order *pb.OrderResult) error {
-	conn, err := createClient(ctx, cs.emailSvcAddr)
+	conn, err := createClient(cs.emailSvcAddr)
 	if err != nil {
 		return fmt.Errorf("failed to connect email service: %+v", err)
 	}
@@ -346,7 +372,7 @@ func (cs *checkoutService) sendOrderConfirmation(ctx context.Context, email stri
 }
 
 func (cs *checkoutService) shipOrder(ctx context.Context, address *pb.Address, items []*pb.CartItem) (string, error) {
-	conn, err := createClient(ctx, cs.shippingSvcAddr)
+	conn, err := createClient(cs.shippingSvcAddr)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect email service: %+v", err)
 	}

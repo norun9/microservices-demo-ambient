@@ -41,7 +41,9 @@ build:
     docker:
       dockerfile: Dockerfile
   - image: frontend
-    context: src/frontend
+    context: .
+    docker:
+      dockerfile: src/frontend/Dockerfile
   - image: adservice
     context: src/adservice
   - image: otelcollector
