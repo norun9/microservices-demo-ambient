@@ -1,0 +1,62 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+FROM golang:1.24.1-alpine AS builder
+ARG SERVICE_NAME
+RUN apk add --no-cache ca-certificates git
+RUN apk add build-base
+
+# Create a directory structure that mimics the local environment
+WORKDIR /app
+
+# Copy genproto to the location expected by the ../../genproto path
+COPY genproto /app/genproto
+
+# Copy go.mod and go.sum to the service directory
+COPY src/${SERVICE_NAME}/go.mod src/${SERVICE_NAME}/go.sum /app/src/${SERVICE_NAME}/
+WORKDIR /app/src/${SERVICE_NAME}
+# Download dependencies
+RUN go mod download
+
+# Copy service source code
+WORKDIR /app/src/${SERVICE_NAME}
+COPY src/${SERVICE_NAME} .
+
+RUN go build -o /go/bin/server .
+
+FROM alpine:latest AS release
+ARG GRPC_HEALTH_PROBE_VERSION=v0.4.11
+ARG SERVICE_PORT
+ARG SERVICE_NAME
+
+RUN apk add --no-cache ca-certificates \
+    busybox-extras net-tools bind-tools
+WORKDIR /src
+COPY --from=builder /go/bin/server /src/server
+COPY --from=builder /app/src/${SERVICE_NAME}/data* /src/data
+COPY --from=builder /app/src/${SERVICE_NAME}/templates* /src/templates
+COPY --from=builder /app/src/${SERVICE_NAME}/static* /src/static
+COPY --from=builder /app/src/${SERVICE_NAME}/products.json* /src/
+
+RUN GRPC_HEALTH_PROBE_VERSION=v0.4.7 && \
+    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
+    chmod +x /bin/grpc_health_probe
+
+# Definition of this variable is used by 'skaffold debug' to identify a golang binary.
+# Default behavior - a failure prints a stack trace for the current goroutine.
+# See https://golang.org/pkg/runtime/
+ENV GOTRACEBACK=single
+
+# Expose the service port
+EXPOSE ${SERVICE_PORT}
+ENTRYPOINT ["/src/server"]

@@ -26,16 +26,20 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"go.opentelemetry.io/otel/trace"
 
-	pb "github.com/norun9/microservices-demo-ambient/genproto/hipstershop"
-	healthpb "github.com/norun9/microservices-demo-ambient/genproto/hipstershop/grpc/health/v1"
+	pb "github.com/norun9/microservices-demo-ambient/genproto"
 	money "github.com/norun9/microservices-demo-ambient/src/checkoutservice/money"
 )
 
@@ -63,16 +67,41 @@ func init() {
 func InitTracerProvider() *sdktrace.TracerProvider {
 	ctx := context.Background()
 
-	exporter, err := otlptracegrpc.New(ctx)
+	// 1) Configure OTLP gRPC exporter.
+	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if endpoint == "" {
+		endpoint = "dns:///otel-collector.observability.svc.cluster.local:4317"
+	}
+	exporter, err := otlptracegrpc.New(ctx,
+		otlptracegrpc.WithEndpoint(endpoint),
+		otlptracegrpc.WithInsecure(),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// 2) Set up resource information (service name, version, etc.).
+	res, err := resource.New(ctx,
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String("checkoutservice"),
+			semconv.ServiceVersionKey.String("v1.0.0"),
+		),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 3) Build TracerProvider.
+	bsp := sdktrace.NewBatchSpanProcessor(exporter)
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),
-		sdktrace.WithBatcher(exporter),
+		sdktrace.WithSampler(sdktrace.AlwaysSample()), // Consider TraceIDRatioBased for production.
+		sdktrace.WithResource(res),
+		sdktrace.WithSpanProcessor(bsp),
 	)
 	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+
+	// 4) Configure to use W3C Trace Context.
+	otel.SetTextMapPropagator(propagation.TraceContext{})
 	return tp
 }
 
@@ -83,8 +112,8 @@ type checkoutService struct {
 	shippingSvcAddr       string
 	emailSvcAddr          string
 	paymentSvcAddr        string
+	tracer                trace.Tracer
 	pb.UnimplementedCheckoutServiceServer
-	healthpb.UnimplementedHealthServer
 }
 
 func main() {
@@ -107,6 +136,7 @@ func main() {
 	mustMapEnv(&svc.currencySvcAddr, "CURRENCY_SERVICE_ADDR")
 	mustMapEnv(&svc.emailSvcAddr, "EMAIL_SERVICE_ADDR")
 	mustMapEnv(&svc.paymentSvcAddr, "PAYMENT_SERVICE_ADDR")
+	svc.tracer = otel.Tracer("checkoutservice")
 
 	log.Infof("service config: %+v", svc)
 
@@ -119,7 +149,9 @@ func main() {
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
 	pb.RegisterCheckoutServiceServer(srv, svc)
-	healthpb.RegisterHealthServer(srv, svc)
+	healthSvc := health.NewServer()
+	grpc_health_v1.RegisterHealthServer(srv, healthSvc)
+	healthSvc.SetServingStatus("checkoutservice", grpc_health_v1.HealthCheckResponse_SERVING)
 	log.Infof("starting to listen on tcp: %q", lis.Addr().String())
 	err = srv.Serve(lis)
 	log.Fatal(err)
@@ -133,19 +165,10 @@ func mustMapEnv(target *string, envKey string) {
 	*target = v
 }
 
-func (cs *checkoutService) Check(ctx context.Context, req *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
-	return &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING}, nil
-}
-
-func (cs *checkoutService) List(ctx context.Context, req *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "health check via List not implemented")
-}
-
-func (cs *checkoutService) Watch(req *healthpb.HealthCheckRequest, ws *healthpb.HealthCheckRequest) error {
-	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
-}
-
 func (cs *checkoutService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (*pb.PlaceOrderResponse, error) {
+	ctx, span := cs.tracer.Start(ctx, "PlaceOrder")
+	defer span.End()
+
 	log.Infof("[PlaceOrder] user_id=%q user_currency=%q", req.UserId, req.UserCurrency)
 
 	orderID, err := uuid.NewUUID()

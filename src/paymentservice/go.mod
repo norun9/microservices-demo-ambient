@@ -1,17 +1,15 @@
-module github.com/norun9/microservices-demo-ambient/src/checkoutservice
+module github.com/norun9/microservices-demo-ambient/src/paymentservice
 
 go 1.24.1
-
-replace github.com/norun9/microservices-demo-ambient/genproto => ../../genproto
 
 require (
 	github.com/google/uuid v1.6.0
 	github.com/norun9/microservices-demo-ambient/genproto v0.0.0-00010101000000-000000000000
-	github.com/sirupsen/logrus v1.9.3
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.62.0
 	go.opentelemetry.io/otel v1.37.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.37.0
 	go.opentelemetry.io/otel/sdk v1.37.0
+	go.opentelemetry.io/otel/trace v1.37.0
 	google.golang.org/grpc v1.73.0
 )
 
@@ -23,7 +21,6 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.37.0 // indirect
 	go.opentelemetry.io/otel/metric v1.37.0 // indirect
-	go.opentelemetry.io/otel/trace v1.37.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.7.0 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
@@ -32,3 +29,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 )
+
+replace github.com/norun9/microservices-demo-ambient/genproto => ../../genproto

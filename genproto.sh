@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
 # Create output directory if it doesn't exist
 mkdir -p genproto
 

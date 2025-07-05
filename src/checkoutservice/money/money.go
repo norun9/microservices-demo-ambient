@@ -17,7 +17,7 @@ package money
 import (
 	"errors"
 
-	pb "github.com/norun9/microservices-demo-ambient/src/checkoutservice/genproto/hipstershop"
+	pb "github.com/norun9/microservices-demo-ambient/genproto"
 )
 
 const (

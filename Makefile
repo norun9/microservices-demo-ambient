@@ -3,7 +3,8 @@
         label-crds istioctl-install istioctl-version helm-install addons-install kiali-install \
         gateway-api istio-base apply-otel-telemetry create-demo-app build-images build-local-image \
         deploy-app label-ambient enroll-waypoint label-use-waypoint \
-        build-load build-ad build-cart build-currency build-email build-payment build-recommendation build-productcatalog
+        build-load build-ad build-cart build-currency build-email build-payment build-recommendation build-productcatalog \
+        build-all-go-services clean-builder-cache
 
 # Tools
 HELM := helm
@@ -172,56 +173,56 @@ create-demo-app:
 	@$(KUBECTL) create namespace demo-app 2>/dev/null || echo "  namespace already exists"
 
 # 18. Build images in parallel
-build-images:
-	@echo "[18/23] Building images in parallel..."
-	$(MAKE) -j8 build-load build-ad build-cart build-currency build-email build-payment build-recommendation build-productcatalog
+SERVICES := adservice cartservice checkoutservice currencyservice \
+            emailservice frontend paymentservice productcatalogservice \
+            recommendationservice shippingservice
 
-# Individual build steps (executed by build-images)
-build-load:
+SERVICE_PORT_adservice=9555
+SERVICE_PORT_cartservice=7070
+SERVICE_PORT_checkoutservice=5050
+SERVICE_PORT_currencyservice=7000
+SERVICE_PORT_emailservice=8080
+SERVICE_PORT_frontend=8080
+SERVICE_PORT_paymentservice=50051
+SERVICE_PORT_productcatalogservice=3550
+SERVICE_PORT_recommendationservice=8080
+SERVICE_PORT_shippingservice=50051
+
+define BUILD_SERVICE
+  @echo "  - Building $(1) image..."
+  docker build \
+    --build-arg SERVICE_NAME=$(1) \
+    --build-arg SERVICE_PORT=$$(SERVICE_PORT_$(1)) \
+    -t $(1):local \
+    -f Dockerfile.service .
+endef
+
+build-images:
+	@echo "Building service images in parallel..."
+	@$(MAKE) -j 1 $(addprefix build-,$(SERVICES))
+
+build-%:
+	$(call BUILD_SERVICE,$*)
+
+clean-builder-cache:
+	@echo "Cleaning old Docker builder cache (older than 24h)..."
+	docker builder prune --force --filter "until=24h"
+
+build-loadgenerator:
 	@echo "    - Building k6-loadgenerator image..."
 	cd src/k6-loadgenerator && docker build -t k6-loadgenerator:local .
 
-build-ad:
-	@echo "    - Building adservice-go image..."
-	cd src/adservice-go && docker build -t adservice-go:local .
-
-build-cart:
-	@echo "    - Building cartservice-go image..."
-	cd src/cartservice-go && docker build -t cartservice-go:local .
-
-build-currency:
-	@echo "    - Building currencyservice-go image..."
-	cd src/currencyservice-go && docker build -t currencyservice-go:local .
-
-build-email:
-	@echo "    - Building emailservice-go image..."
-	cd src/emailservice-go && docker build -t emailservice-go:local .
-
-build-payment:
-	@echo "    - Building paymentservice-go image..."
-	cd src/paymentservice-go && docker build -t paymentservice-go:local .
-
-build-recommendation:
-	@echo "    - Building recommendationservice-go image..."
-	cd src/recommendationservice-go && docker build -t recommendationservice-go:local .
-
-build-productcatalog:
-	@echo "    - Building productcatalogservice-go image..."
-	cd src/productcatalogservice-go && docker build -t productcatalogservice-go:local .
+KIND_LOAD_IMAGES := frontend k6-loadgenerator adservice checkoutservice cartservice \
+               currencyservice emailservice paymentservice recommendationservice \
+               productcatalogservice shippingservice
 
 # 19. Load into kind and prune
-build-local-image: build-images
+build-local-image: build-images build-loadgenerator clean-builder-cache
 	@echo "→ Loading images into kind cluster..."
-	@$(KIND) load docker-image k6-loadgenerator:local   --name $(CLUSTER_NAME)
-	@$(KIND) load docker-image adservice-go:local      --name $(CLUSTER_NAME)
-	@$(KIND) load docker-image cartservice-go:local    --name $(CLUSTER_NAME)
-	@$(KIND) load docker-image currencyservice-go:local --name $(CLUSTER_NAME)
-	@$(KIND) load docker-image emailservice-go:local   --name $(CLUSTER_NAME)
-	@$(KIND) load docker-image paymentservice-go:local --name $(CLUSTER_NAME)
-	@$(KIND) load docker-image recommendationservice-go:local --name $(CLUSTER_NAME)
-	@$(KIND) load docker-image productcatalogservice-go:local --name $(CLUSTER_NAME)
-	@echo "→ Cleaning up Docker build cache..."
-	@docker builder prune -f
+	@for svc in $(KIND_LOAD_IMAGES); do \
+	  echo "   • $$svc:local → kind load"; \
+	  $(KIND) load docker-image $$svc:local --name $(CLUSTER_NAME); \
+	done
 
 ROLL ?= false
 
