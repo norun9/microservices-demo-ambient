@@ -1,8 +1,38 @@
-# Otel Settings Ref: https://github.com/istio/istio/tree/master/samples/open-telemetry
 apiVersion: v1
 kind: Namespace
 metadata:
   name: observability
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector
+  namespace: observability
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otel-collector
+rules:
+  - apiGroups: [""]
+    resources: ["nodes/stats", "nodes/proxy", "pods", "namespaces"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: otel-collector
+subjects:
+  - kind: ServiceAccount
+    name: otel-collector
+    namespace: observability
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -20,209 +50,116 @@ data:
             endpoint: 0.0.0.0:4317
           http:
             endpoint: 0.0.0.0:4318
-      prometheus:
-        config:
-          scrape_configs:
-            # - job_name: 'istio-prometheus'
-            #   static_configs:
-            #     - targets:
-            #         - 'prometheus.istio-system.svc.cluster.local:9090'
-            - job_name: 'kubernetes-pods-annotated'
-              kubernetes_sd_configs:
-                - role: pod
-              relabel_configs:
-                # ← ここで namespace=demo-app だけ残す
-                - source_labels: [__meta_kubernetes_namespace]
-                  action: keep
-                  regex: demo-app
-                # Prometheus アノテーション promethus.io/scrape: "true" がついた Pod のみを対象にする
-                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
-                  action: keep
-                  regex: 
-                - source_labels: [__address__]
-                  regex: ^$
-                  action: drop
-                # アノテーションで指定したパスを metrics_path に設定
-                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
-                  action: replace
-                  target_label: __metrics_path__
-                  regex: (.+)
-                # アノテーションで指定したポートに書き換える
-                - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
-                  regex: (.+):(?:\d+);(\d+)
-                  replacement: $1:$2
-                  target_label: __address__
-                - source_labels: [__address__]
-                  regex: ^$
-                  action: drop
+      kubeletstats:
+        auth_type: serviceAccount
+        endpoint: ${env:K8S_NODE_NAME}:10250
+        insecure_skip_verify: true
+
     processors:
       batch:
         timeout: 1s
         send_batch_size: 1
+      k8sattributes:
+        auth_type: serviceAccount
+        passthrough: false
+        extract:
+          metadata:
+            - k8s.pod.name
+            - k8s.pod.uid
+            - k8s.namespace.name
+            - k8s.node.name
+            - k8s.container.name
+
     exporters:
-      logging:
-        loglevel: debug
-      # 2) トレース専用の file exporter
-      file/traces: # OK
-        path: /data/traces.jsonl
-
-      # (3) メトリクス専用ファイルエクスポーター
-      file/metrics: # メトリクスだけ何も出力されていない。
-        path: /data/metrics.jsonl
-
-      # (4) ログ専用ファイルエクスポーター
-      file/logs: # OK
-        path: /data/logs.jsonl
-
+      debug:
       # Jaeger exporter for visualization
-      jaeger:
-        endpoint: jaeger-collector.istio-system:14250
+      otlp:
+        endpoint: jaeger-collector.istio-system:4317
         tls:
           insecure: true
+      file/metrics:
+        path: /data/metrics.jsonl
+      file/logs:
+        path: /data/logs.jsonl
+      file/traces:
+        path: /data/traces.jsonl
 
-      prometheus:
-        endpoint: "0.0.0.0:8889"
     extensions:
       health_check:
+        endpoint: localhost:13133
     service:
       extensions:
         - health_check
-      telemetry:
-        logs:
-          level: "DEBUG"
       pipelines:
         traces:
           receivers: [otlp]
           processors: [batch]
-          exporters: [file/traces, jaeger]
+          exporters: [file/traces, otlp]
         metrics:
-          receivers: [prometheus]
-          processors: [batch]
-          exporters: [file/metrics, logging]
+          receivers: [kubeletstats]
+          processors: [batch, k8sattributes]
+          exporters: [file/metrics]
         logs:
           receivers: [otlp]
           processors: [batch]
-          exporters: [file/logs]
+          exporters: [file/logs, debug]
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: otel-collector
-  namespace: observability
-  labels:
-    app: otel-collector
-spec:
-  selector:
-    app: otel-collector
-  ports:
-    - name: grpc-otlp
-      port: 4317
-      protocol: TCP
-      targetPort: 4317
-    - name: http-otlp
-      port: 4318
-      protocol: TCP
-      targetPort: 4318
-    - name: health
-      port: 13133
-      protocol: TCP
-      targetPort: 13133
+# --- Kubernetes Workload ---
+# This section defines how the Collector is deployed to the cluster.
 
----
+# A DaemonSet ensures that one Collector pod runs on every node in the cluster.
+# This is necessary because the kubeletstatsreceiver must connect to the Kubelet
+# on each individual node.
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
   name: otel-collector
   namespace: observability
   labels:
     app: otel-collector
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: otel-collector
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 1
   template:
     metadata:
       labels:
         app: otel-collector
-        sidecar.istio.io/inject: "false"
     spec:
+      serviceAccountName: otel-collector
       containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:latest
+          command: ["/otelcol-contrib", "--config=/conf/otel-collector-config.yaml"]
+          securityContext:
+            runAsUser: 0
+          env:
+            - name: K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          ports:
+            - name: health
+              containerPort: 13133
+          volumeMounts:
+            - name: otel-collector-config
+              mountPath: /conf
+            - name: data
+              mountPath: /data
         - name: debug-shell
           image: busybox:1.35.0
-          command: [ "sleep", "1d" ]
+          command:
+            - /bin/sh
+            - -c
+            - sleep infinity
           volumeMounts:
           - name: data
             mountPath: /data
-        - name: otel-collector
-          image: otel/opentelemetry-collector:0.54.0
-          imagePullPolicy: IfNotPresent
-          command:
-            - "/otelcol"
-            - "--config=/conf/otel-collector-config.yaml"
-          ports:
-            - name: grpc-opencensus
-              containerPort: 55678
-            - name: grpc-otlp
-              containerPort: 4317
-            - name: http-otlp
-              containerPort: 4318
-          resources:
-            requests:
-              cpu: 200m
-              memory: 400Mi
-            limits:
-              cpu: "2"
-              memory: 4Gi
-          volumeMounts:
-            - name: otel-collector-config
-              mountPath: /conf/otel-collector-config.yaml
-              subPath: otel-collector-config.yaml
-            - name: data
-              mountPath: /data
-      restartPolicy: Always
-      dnsPolicy: ClusterFirst
-      terminationGracePeriodSeconds: 30
       volumes:
-        - name: data
-          emptyDir: {}
         - name: otel-collector-config
           configMap:
             name: otel-collector-conf
-            items:
-              - key: otel-collector-config.yaml
-                path: otel-collector-config.yaml
----
-# RBAC: Collector がクラスタ内をスクレイプするための権限
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: otel-collector-metrics-reader
-rules:
-  - apiGroups: [""]
-    resources: ["nodes/metrics", "nodes/proxy", "nodes", "services", "endpoints", "pods"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["extensions"]
-    resources: ["ingresses"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["networking.k8s.io"]
-    resources: ["ingresses"]
-    verbs: ["get", "list", "watch"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: otel-collector-metrics-reader-binding
-subjects:
-  - kind: ServiceAccount
-    name: default
-    namespace: observability
-roleRef:
-  kind: ClusterRole
-  name: otel-collector-metrics-reader
-  apiGroup: rbac.authorization.k8s.io
+        - name: data
+          hostPath:
+            path: /var/lib/otel-collector-data
+            type: DirectoryOrCreate

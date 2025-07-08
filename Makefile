@@ -168,8 +168,8 @@ apply-otel-telemetry:
 	@$(KUBECTL) apply -f ./release/otel-collector.yaml
 	@$(KUBECTL) apply -f ./release/als-telemetry.yaml
 	@if [ "$(ROLL)" = "true" ]; then \
-		echo "[20/23] Restarting deployments in 'observability' namespace..."; \
-		$(KUBECTL) rollout restart deployment -n observability; \
+		echo "[20/23] Restarting Daemonset in 'observability' namespace..."; \
+		$(KUBECTL)  rollout restart daemonset otel-collector -n observability; \
 	fi
 
 # 17. Create demo-app namespace
@@ -210,8 +210,8 @@ build-%:
 	$(call BUILD_SERVICE,$*)
 
 clean-builder-cache:
-	@echo "Cleaning old Docker builder cache (older than 24h)..."
-	docker builder prune --force --filter "until=24h"
+	@echo "Cleaning old Docker builder cache (older than 3h)..."
+	docker builder prune --force --filter "until=3h"
 
 build-loadgenerator:
 	@echo "    - Building k6-loadgenerator image..."

@@ -13,8 +13,10 @@
 # limitations under the License.
 FROM golang:1.24.1-alpine AS builder
 ARG SERVICE_NAME
-RUN apk add --no-cache ca-certificates git
-RUN apk add build-base
+
+ENV CGO_ENABLED=0
+
+RUN apk add --no-cache ca-certificates
 
 # Create a directory structure that mimics the local environment
 WORKDIR /app
